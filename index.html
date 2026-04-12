@@ -1,0 +1,639 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>情绪灵感机 · Mobile v4</title>
+  <meta name="theme-color" content="#0b0b0b" />
+  <style>
+    :root{
+      --bg:#080808;
+      --panel:#121212;
+      --panel2:#171717;
+      --line:#272727;
+      --text:#f5f5f5;
+      --muted:#9b9b9b;
+      --soft:#7d7d7d;
+      --accent:#f0f0f0;
+      --ok:#9fd39f;
+      --warn:#d39f9f;
+      --radius:22px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",Arial,sans-serif}
+    body{min-height:100vh}
+    .app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;background:linear-gradient(180deg,#080808,#0d0d0d)}
+    .screen{display:none;padding:18px 16px 0}
+    .screen.active{display:block}
+    .topbar{padding:6px 2px 10px;display:flex;justify-content:space-between;align-items:center}
+    .title{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#cfcfcf}
+    .pill{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:12px}
+    .hero{
+      margin-top:8px;border:1px solid var(--line);border-radius:30px;padding:18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+      box-shadow:0 0 40px rgba(255,255,255,.04);
+    }
+    .hero h1{margin:0;font-size:34px;line-height:1.03;letter-spacing:-.04em}
+    .sub{margin-top:10px;color:var(--muted);font-size:14px;line-height:1.7}
+    .mode-row{display:flex;gap:8px;overflow:auto;padding:4px 0 2px;margin-top:16px}
+    .chip{white-space:nowrap;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
+    .chip.active{background:#f3f3f3;color:#111;border-color:#f3f3f3}
+    .spin-wrap{
+      margin-top:16px;border:1px solid var(--line);border-radius:28px;min-height:430px;padding:16px;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.07), rgba(255,255,255,.02) 26%, rgba(255,255,255,.01) 52%, transparent 70%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center
+    }
+    .tap-note{
+      position:absolute;top:16px;left:50%;transform:translateX(-50%);
+      padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+      font-size:12px;color:#d5d5d5;backdrop-filter:blur(10px)
+    }
+    .wheel{
+      width:min(88vw,360px);height:min(88vw,360px);max-width:360px;max-height:360px;border-radius:50%;
+      border:1px solid rgba(255,255,255,.12);position:relative;display:grid;place-items:center;
+      box-shadow:inset 0 0 50px rgba(255,255,255,.03),0 0 50px rgba(255,255,255,.03)
+    }
+    .wheel::before,.wheel::after{
+      content:"";position:absolute;border-radius:50%;border:1px dashed rgba(255,255,255,.06)
+    }
+    .wheel::before{inset:7%}
+    .wheel::after{inset:20%;border-style:solid;border-color:rgba(255,255,255,.05)}
+    .pointer{
+      position:absolute;top:12px;left:50%;transform:translateX(-50%);
+      width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:20px solid #f1f1f1;
+      filter:drop-shadow(0 0 12px rgba(255,255,255,.2))
+    }
+    .center{
+      width:56%;height:56%;border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;
+      text-align:center;padding:18px;border:1px solid rgba(255,255,255,.12);
+      background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.16), rgba(255,255,255,.03) 56%, rgba(255,255,255,.02) 72%);
+      cursor:pointer;user-select:none
+    }
+    .center:active{transform:scale(.985)}
+    .center-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+    .emotion{margin-top:10px;font-size:34px;font-weight:700;line-height:1.05;letter-spacing:-.04em}
+    .emotion-sub{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.6}
+    .spinning .wheel{animation:turn 5.2s linear infinite}
+    .spinning .emotion{animation:flicker .16s linear infinite}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;width:100%}
+    button, .btn{
+      border:1px solid var(--line);background:#141414;color:var(--text);
+      border-radius:18px;padding:14px 14px;font-size:14px;cursor:pointer;text-align:center;text-decoration:none
+    }
+    button.primary,.btn.primary{background:#f3f3f3;color:#111;border-color:#f3f3f3;font-weight:600}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .stat{border:1px solid var(--line);background:#111;border-radius:18px;padding:14px}
+    .num{font-size:28px;font-weight:700}
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .section{margin-top:16px;border:1px solid var(--line);background:var(--panel);border-radius:24px;padding:16px}
+    .section h2{margin:0 0 10px;font-size:18px}
+    .list{display:grid;gap:10px}
+    .item{padding:12px 14px;border-radius:16px;border:1px solid #252525;background:#141414;line-height:1.65;color:#e2e2e2}
+    .big-name{font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-.04em}
+    .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .tag{padding:7px 12px;border-radius:999px;background:#1b1b1b;border:1px solid var(--line);font-size:12px}
+    input,textarea,select{
+      width:100%;background:#0f0f0f;border:1px solid var(--line);color:var(--text);
+      border-radius:16px;padding:13px 14px;font-size:14px;outline:none
+    }
+    textarea{min-height:90px;resize:vertical}
+    .field{margin-top:12px}
+    .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+    .muted{color:var(--muted)}
+    .small{font-size:12px;color:var(--soft)}
+    .status.ok{color:var(--ok)}
+    .status.warn{color:var(--warn)}
+    .history{display:grid;gap:10px}
+    .history-row{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#111}
+    .bottom-nav{
+      position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+      background:linear-gradient(to top, rgba(8,8,8,.98), rgba(8,8,8,.92));
+      backdrop-filter:blur(14px)
+    }
+    .bottom-nav-inner{
+      max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+      border:1px solid var(--line);background:#101010;border-radius:22px;padding:8px
+    }
+    .tab{
+      border-radius:16px;padding:10px 6px;text-align:center;color:var(--muted);font-size:12px;cursor:pointer
+    }
+    .tab.active{background:#1a1a1a;color:#fff}
+    a.inline{color:#fff}
+    @keyframes turn{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes flicker{0%{opacity:.5}50%{opacity:1}100%{opacity:.6}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="screen active" id="screen-spin">
+      <div class="topbar">
+        <div class="title">Emotion Engine</div>
+        <div class="pill">手机版布局</div>
+      </div>
+
+      <div class="hero">
+        <h1>抽一个情绪，<br>拍成你的视频开场。</h1>
+        <div class="sub">现在可以直接点击中间 UI 画面抽取，不只依赖下面的按钮，更方便你拍摄“随机抽情绪”的画面。</div>
+
+        <div class="mode-row" id="modeRow"></div>
+
+        <div class="spin-wrap" id="spinWrap">
+          <div class="tap-note">点击中间圆形即可抽取</div>
+          <div class="pointer"></div>
+          <div class="wheel">
+            <div class="center" id="centerSpin">
+              <div class="center-label">Tap To Draw</div>
+              <div class="emotion" id="emotionDisplay">点这里开始</div>
+              <div class="emotion-sub" id="emotionSub">让观众主要看到这里</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="spinBtn">开始抽取情绪</button>
+            <button id="markUsedBtn">确认已拍摄 / 已使用</button>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="label">总情绪</div><div class="num" id="statTotal">0</div></div>
+            <div class="stat"><div class="label">可抽取</div><div class="num" id="statAvailable">0</div></div>
+            <div class="stat"><div class="label">已使用</div><div class="num" id="statUsed">0</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-detail">
+      <div class="topbar">
+        <div class="title">详情</div>
+        <div class="pill">你自己看</div>
+      </div>
+
+      <div class="section">
+        <div class="big-name" id="detailName">还没有抽取</div>
+        <div class="sub" id="detailDesc">抽取后，这里会显示完整说明。</div>
+        <div class="tags" id="detailTags"></div>
+      </div>
+
+      <div class="section">
+        <h2>创作方向</h2>
+        <div class="list" id="directionList"></div>
+      </div>
+
+      <div class="section">
+        <h2>绘画元素参考</h2>
+        <div class="list" id="artList"></div>
+      </div>
+
+      <div class="section">
+        <h2>镜头 / 画面建议</h2>
+        <div class="list" id="shotList"></div>
+      </div>
+
+      <div class="section">
+        <h2>视频文案</h2>
+        <div class="list" id="scriptList"></div>
+      </div>
+
+      <div class="section">
+        <button id="copyResultBtn">复制当前结果</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-library">
+      <div class="topbar">
+        <div class="title">情绪库</div>
+        <div class="pill">不再放右边</div>
+      </div>
+
+      <div class="section">
+        <h2>新增一个情绪</h2>
+        <div class="small">你自己想到的，或者以后观众投稿给你的，都可以从这里加入。</div>
+
+        <div class="field">
+          <label>情绪名称</label>
+          <input id="newName" placeholder="例如：失控前的安静 / 被理解 / 窒息感">
+        </div>
+
+        <div class="field">
+          <label>关键词（逗号分隔）</label>
+          <input id="newKeywords" placeholder="例如：潮湿,玻璃,呼吸,黑水">
+        </div>
+
+        <div class="field">
+          <label>风格类型</label>
+          <select id="newMode">
+            <option value="all">全部情绪</option>
+            <option value="dark">偏暗黑</option>
+            <option value="tattoo">偏纹身</option>
+            <option value="video">偏视频</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>一句情绪描述</label>
+          <textarea id="newDesc" placeholder="例如：像情绪沉到底部以后，表面却看起来什么都没发生。"></textarea>
+        </div>
+
+        <div class="field">
+          <label>绘画元素参考</label>
+          <textarea id="newArt" placeholder="例如：玻璃水痕、断裂花瓣、低饱和阴影、局部白边"></textarea>
+        </div>
+
+        <div class="field">
+          <label>镜头 / 画面参考</label>
+          <textarea id="newShot" placeholder="例如：正面静止镜头，手停顿 2 秒，再切近景细节"></textarea>
+        </div>
+
+        <div class="field">
+          <label>视频文案种子</label>
+          <textarea id="newScript" placeholder="例如：有些情绪不是突然来的，而是被你反复安静地喂大。"></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="addEmotionBtn">加入情绪库</button>
+          <button id="resetDefaultsBtn">恢复默认情绪库</button>
+        </div>
+        <div class="small status" id="addStatus" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="section">
+        <h2>粉丝投稿入口</h2>
+        <div class="small">这里可以放一个真正给粉丝使用的投稿链接。现在我先给你做了可编辑入口位，你把真实表单链接粘进去就能用了。</div>
+
+        <div class="field">
+          <label>投稿链接 URL</label>
+          <input id="fanLinkInput" placeholder="例如：https://forms.gle/... 或 飞书表单链接">
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="saveFanLinkBtn">保存投稿链接</button>
+          <a class="btn" id="openFanLinkBtn" href="#" target="_blank" rel="noopener noreferrer">打开粉丝投稿页</a>
+        </div>
+        <div class="small" id="fanLinkStatus" style="margin-top:10px;">还没有设置真实的投稿链接。</div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-me">
+      <div class="topbar">
+        <div class="title">我的</div>
+        <div class="pill">记录</div>
+      </div>
+
+      <div class="section">
+        <h2>最近记录</h2>
+        <div class="history" id="historyList"></div>
+      </div>
+
+      <div class="section">
+        <h2>关于这版</h2>
+        <div class="list">
+          <div class="item">现在支持直接点击中心 UI 抽取情绪。</div>
+          <div class="item">底部 tab 已拆成四页，更接近微信底部导航感。</div>
+          <div class="item">粉丝投稿链接已独立成入口位，但要真正收集投稿，仍然需要你放入一个真实表单链接。</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <div class="tab active" data-screen="spin">抽取</div>
+      <div class="tab" data-screen="detail">详情</div>
+      <div class="tab" data-screen="library">情绪库</div>
+      <div class="tab" data-screen="me">我的</div>
+    </div>
+  </nav>
+
+  <script>
+    const defaultEmotions = [
+      {name:"压抑", keywords:["沉默","呼吸","暗流"], mode:["all","dark","video"], desc:"像把很多声音都压进身体里，表面安静，里面却并不平静。", direction:["画面不要满，留出压迫性的黑色空间。","动作越少越好，让停顿自己说话。"], art:["深色留白","细线缠绕","下坠感阴影","被按住的花"], shots:["正面静止半身","慢切到手部细节","最后停笔 2 秒"], script:["有些情绪不是爆发出来的。","而是被你安静地压进身体里，压到连自己都快听不见。"]},
+      {name:"溺水感", keywords:["潮湿","窒息","下沉"], mode:["all","dark","video"], desc:"不是痛得尖锐，而是像被慢慢拖进更深的地方。", direction:["让画面有水感、反光感、拖曳感。","动作像在水里被削弱过一样。"], art:["玻璃水痕","液态黑影","漂浮发丝","白色反光"], shots:["慢速近景","镜头略俯拍","画面节奏拉长"], script:["有些情绪像水。","不会一下把你打碎，只会慢慢把你往下拖。"]},
+      {name:"迷恋", keywords:["靠近","温度","失衡"], mode:["all","video"], desc:"明知道危险，却还是想更靠近一点。", direction:["对比冷静与失控之间的拉扯。","不要拍得太热烈，保持克制会更有张力。"], art:["贴近的线条","互相靠拢的花瓣","局部发亮","细碎红痕"], shots:["先远后近","锁定手指细节","最后留一个没有说完的停顿"], script:["有时候靠近不是因为安全。","而是因为你明知道会失衡，还是想靠近。"]},
+      {name:"钝痛", keywords:["迟钝","余震","忍耐"], mode:["all","tattoo","dark"], desc:"它不锋利，但会一直在，像身体记住了某种重量。", direction:["纹身元素可以更克制，避免太满。","强调残留感，而不是爆发感。"], art:["旧伤感纹理","轻微破损","低饱和灰","发白边缘"], shots:["局部极近景","动作放慢","机器声极轻"], script:["最难处理的不是最疼的情绪。","而是那种不明显，却一直没有离开的。"]},
+      {name:"自救", keywords:["缝合","抓住","浮起"], mode:["all","tattoo","video"], desc:"并不是已经好了，而是开始学会把自己一点点捞起来。", direction:["让画面从压低转向微弱上升。","可以出现手、线、缠绕、缝合等象征。"], art:["缝线","上升的碎片","微光","断裂后重新连接"], shots:["从低处开始拍","结尾亮一点点","用慢呼吸感转场"], script:["我不是突然好起来的。","只是某一天开始，学会把自己一点点捞起来。"]},
+      {name:"幻灭", keywords:["裂开","清醒","坠落"], mode:["all","dark"], desc:"当你终于看清的时候，爱和想象一起碎掉了。", direction:["适合冷色、碎裂、静态构图。","不要太多动作，重点是看清之后的空。"], art:["破碎镜面","冷白光","锋利边缘","空椅子"], shots:["镜头固定","画面层次分离","结尾留黑"], script:["最安静的那一刻，通常不是释怀。","而是你终于看清，原来一切都不会变成你想的样子。"]},
+      {name:"被理解", keywords:["停住","接住","松动"], mode:["all","video"], desc:"像一直绷着的东西突然被轻轻接住。", direction:["可以更柔和，但不要甜。","重点是松动感。"], art:["柔软线条","暖灰","慢慢散开的墨","轻雾"], shots:["镜头更稳定","动作更轻","最后放慢呼吸"], script:["不是每一种温柔都会被看见。","但有些被理解，会让人突然安静下来。"]},
+      {name:"失控前的安静", keywords:["平静","预兆","裂缝"], mode:["all","dark","video"], desc:"表面越安静，越像有什么正在下面缓慢裂开。", direction:["适合先稳后失衡的结构。","用很小的变化制造不安。"], art:["细微裂缝","规整构图","一点点偏移","压低亮度"], shots:["前半段尽量稳","后半段细节切得更近","停顿比动作重要"], script:["真正可怕的，常常不是失控本身。","而是失控之前，那种过于安静的几秒。"]},
+      {name:"妒意", keywords:["比较","发热","隐秘"], mode:["all","dark"], desc:"一种不愿承认，却会在身体里悄悄发热的情绪。", direction:["不要表现成直接愤怒，而是更隐秘。","适合局部发亮和压暗共存。"], art:["暗处红点","尖锐植物","对照构图","局部反光"], shots:["面部不必出全","用手部或眼神替代","节奏短促"], script:["有些情绪不会大声说出来。","它只会在你否认的时候，悄悄开始发热。"]},
+      {name:"报复性清醒", keywords:["看透","切断","过冷"], mode:["all","dark","tattoo"], desc:"不是想原谅，而是突然什么都看得太清楚了。", direction:["适合更锋利、更克制的黑白灰。","线条可以偏硬。"], art:["刀锋感白边","干净切线","冷硬反差","断开的连接"], shots:["黑底高反差","动作极少","靠声音和停顿撑住"], script:["有时候清醒不是成长。","只是你终于不想再骗自己了。"]},
+      {name:"空掉", keywords:["抽离","无重力","发白"], mode:["all","video"], desc:"不像难过，更像突然什么都接不上。", direction:["减少信息量，让空白成为主体。","适合极简构图。"], art:["大片留白","轻灰过渡","悬空物体","模糊边缘"], shots:["远景更有效","动作越慢越好","环境声保留"], script:["不是所有低落都很明显。","有时候只是突然，什么都接不上了。"]},
+      {name:"偏执", keywords:["重复","锁定","无法放过"], mode:["all","dark","tattoo"], desc:"一件事、一句话、一个眼神，在脑海里不断被反复磨亮。", direction:["适合重复元素。","让结构本身体现执拗。"], art:["重复针脚","循环图形","对称失衡","密集细节"], shots:["同一动作重复拍","切同一个位置","声音更机械"], script:["有些执念不是放不下。","而是它已经在你脑子里，把自己磨成了刀。"]},
+      {name:"松弛后的疲惫", keywords:["卸下","后知后觉","塌下来"], mode:["all","video"], desc:"不是结束了就轻松，而是终于放下以后，疲惫才慢慢浮上来。", direction:["适合慢下来，甚至有一点塌陷感。","让结束成为真正的开始。"], art:["垂下的线","软掉的花","阴影扩散","坐姿"], shots:["结尾更重要","动作停下来","镜头不用多"], script:["有时候不是坚持最累。","而是你终于松开的时候，才发现自己已经很累了。"]},
+      {name:"想念", keywords:["残留","旧温度","回响"], mode:["all","video"], desc:"它不一定悲伤，只是某些旧的温度突然又回来了。", direction:["画面可更轻，但不要甜腻。","重点是残留。"], art:["旧纸纹理","泛黄边缘","柔和回光","停留过的痕迹"], shots:["慢慢推近","留环境声","不要切太碎"], script:["想念不是回头。","只是有些温度，过了很久还是会突然回来。"]},
+      {name:"愤怒", keywords:["刺痛","爆点","反击"], mode:["all","dark","tattoo"], desc:"它想往外冲，但也可能被你很用力地按着。", direction:["可以控制在克制边缘。","留一点没彻底爆开的感觉会更高级。"], art:["锐利线条","拉扯痕","深黑块面","爆裂边缘"], shots:["切镜更快一点","音效更硬","最后戛然而止"], script:["愤怒不总是大声。","有时候它只是安静地，在身体里磨出一层锋利。"]},
+      {name:"羞耻", keywords:["回避","蜷缩","发烫"], mode:["all","dark"], desc:"像想把自己藏起来，却又清楚地感觉到自己正在被看见。", direction:["适合局部遮挡和不完整构图。","不用直视镜头。"], art:["遮挡","弯曲线条","局部红","收缩感"], shots:["避开正脸","更多背面或侧面","近景比远景更有效"], script:["羞耻感最安静。","它不会推着你说话，只会让你想把自己藏起来。"]}
+    ];
+
+    const modeLabels = {all:"全部",dark:"暗黑",tattoo:"纹身",video:"视频"};
+    const keys = {
+      emotions:'emotion_mobile_v4_library',
+      used:'emotion_mobile_v4_used',
+      history:'emotion_mobile_v4_history',
+      current:'emotion_mobile_v4_current',
+      mode:'emotion_mobile_v4_mode',
+      fan:'emotion_mobile_v4_fan_link'
+    };
+
+    let emotions = load(keys.emotions, defaultEmotions);
+    let usedNames = new Set(load(keys.used, []));
+    let history = load(keys.history, []);
+    let currentEmotion = load(keys.current, null);
+    let currentMode = load(keys.mode, 'all');
+    let fanLink = load(keys.fan, '');
+
+    const screens = {
+      spin: document.getElementById('screen-spin'),
+      detail: document.getElementById('screen-detail'),
+      library: document.getElementById('screen-library'),
+      me: document.getElementById('screen-me'),
+    };
+
+    const emotionDisplay = document.getElementById('emotionDisplay');
+    const emotionSub = document.getElementById('emotionSub');
+    const detailName = document.getElementById('detailName');
+    const detailDesc = document.getElementById('detailDesc');
+    const detailTags = document.getElementById('detailTags');
+    const directionList = document.getElementById('directionList');
+    const artList = document.getElementById('artList');
+    const shotList = document.getElementById('shotList');
+    const scriptList = document.getElementById('scriptList');
+    const historyList = document.getElementById('historyList');
+    const modeRow = document.getElementById('modeRow');
+    const spinWrap = document.getElementById('spinWrap');
+    const statTotal = document.getElementById('statTotal');
+    const statAvailable = document.getElementById('statAvailable');
+    const statUsed = document.getElementById('statUsed');
+
+    function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+    function load(k,fallback){
+      try{
+        const raw = localStorage.getItem(k);
+        return raw ? JSON.parse(raw) : fallback;
+      }catch(e){ return fallback; }
+    }
+
+    function switchScreen(name){
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[name].classList.add('active');
+      document.querySelectorAll('.tab').forEach(tab=>{
+        tab.classList.toggle('active', tab.dataset.screen === name);
+      });
+    }
+
+    function renderModes(){
+      modeRow.innerHTML = '';
+      Object.entries(modeLabels).forEach(([key,label])=>{
+        const chip = document.createElement('div');
+        chip.className = 'chip' + (currentMode===key ? ' active' : '');
+        chip.textContent = label;
+        chip.onclick = ()=>{
+          currentMode = key;
+          save(keys.mode, currentMode);
+          renderModes();
+          updateStats();
+        };
+        modeRow.appendChild(chip);
+      });
+    }
+
+    function getPool(){
+      return emotions.filter(e => (e.mode || []).includes(currentMode) || (currentMode === 'all' && (e.mode || []).includes('all')))
+        .filter(e => !usedNames.has(e.name));
+    }
+
+    function updateStats(){
+      statTotal.textContent = emotions.length;
+      statAvailable.textContent = getPool().length;
+      statUsed.textContent = usedNames.size;
+    }
+
+    function fillList(node, items){
+      node.innerHTML = '';
+      if(!items || !items.length){
+        node.innerHTML = '<div class="item">暂时没有内容。</div>';
+        return;
+      }
+      items.forEach(text=>{
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.textContent = text;
+        node.appendChild(div);
+      });
+    }
+
+    function renderDetail(e){
+      if(!e){
+        detailName.textContent = '还没有抽取';
+        detailDesc.textContent = '抽取后，这里会显示完整说明。';
+        detailTags.innerHTML = '';
+        fillList(directionList, []);
+        fillList(artList, []);
+        fillList(shotList, []);
+        fillList(scriptList, []);
+        return;
+      }
+      detailName.textContent = e.name;
+      detailDesc.textContent = e.desc || '';
+      detailTags.innerHTML = '';
+      (e.keywords || []).forEach(k=>{
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.textContent = k;
+        detailTags.appendChild(tag);
+      });
+      fillList(directionList, e.direction || []);
+      fillList(artList, e.art || []);
+      fillList(shotList, e.shots || []);
+      fillList(scriptList, e.script || []);
+    }
+
+    function setCurrent(e){
+      currentEmotion = e;
+      save(keys.current, currentEmotion);
+      emotionDisplay.textContent = e.name;
+      emotionSub.textContent = e.desc || '已抽取';
+      renderDetail(e);
+    }
+
+    function pushHistory(type,name){
+      history.unshift({type,name,time:new Date().toLocaleString('zh-CN', {hour12:false})});
+      history = history.slice(0, 20);
+      save(keys.history, history);
+      renderHistory();
+    }
+
+    function renderHistory(){
+      historyList.innerHTML = '';
+      if(!history.length){
+        historyList.innerHTML = '<div class="history-row"><div>还没有记录</div><div class="small">你抽取、加入、使用后会显示在这里。</div></div>';
+        return;
+      }
+      history.forEach(h=>{
+        const label = h.type==='used' ? '已使用' : h.type==='added' ? '已加入' : '已抽取';
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        row.innerHTML = `<div>${h.name}</div><div class="small">${label} · ${h.time}</div>`;
+        historyList.appendChild(row);
+      });
+    }
+
+    function spin(){
+      const pool = getPool();
+      if(!pool.length){
+        emotionDisplay.textContent = '当前模式已抽空';
+        emotionSub.textContent = '切换模式，或新增新的情绪。';
+        return;
+      }
+      spinWrap.classList.add('spinning');
+      const duration = 3000;
+      const interval = 90;
+      let elapsed = 0;
+      let pick = pool[0];
+      const timer = setInterval(()=>{
+        pick = pool[Math.floor(Math.random()*pool.length)];
+        emotionDisplay.textContent = pick.name;
+        emotionSub.textContent = (pick.keywords || []).join(' · ') || '抽取中';
+        elapsed += interval;
+        if(elapsed >= duration){
+          clearInterval(timer);
+          spinWrap.classList.remove('spinning');
+          setCurrent(pick);
+          pushHistory('spun', pick.name);
+        }
+      }, interval);
+    }
+
+    function markUsed(){
+      if(!currentEmotion) return;
+      usedNames.add(currentEmotion.name);
+      save(keys.used, Array.from(usedNames));
+      pushHistory('used', currentEmotion.name);
+      updateStats();
+    }
+
+    function addEmotion(){
+      const name = document.getElementById('newName').value.trim();
+      const keywords = document.getElementById('newKeywords').value.trim();
+      const mode = document.getElementById('newMode').value;
+      const desc = document.getElementById('newDesc').value.trim();
+      const art = document.getElementById('newArt').value.trim();
+      const shot = document.getElementById('newShot').value.trim();
+      const script = document.getElementById('newScript').value.trim();
+      const addStatus = document.getElementById('addStatus');
+
+      if(!name){
+        addStatus.textContent = '请先填写情绪名称。';
+        addStatus.className = 'small status warn';
+        return;
+      }
+      if(emotions.some(e=>e.name===name)){
+        addStatus.textContent = '这个情绪已经存在。';
+        addStatus.className = 'small status warn';
+        return;
+      }
+
+      const emotion = {
+        name,
+        keywords: keywords ? keywords.split(',').map(s=>s.trim()).filter(Boolean) : [],
+        mode: Array.from(new Set(['all', mode])),
+        desc,
+        direction:['这是新增情绪，后续你可以继续补充更个人化的创作方向。'],
+        art: art ? art.split(/[\n,，]/).map(s=>s.trim()).filter(Boolean) : [],
+        shots: shot ? shot.split(/[\n,，]/).map(s=>s.trim()).filter(Boolean) : [],
+        script: script ? script.split(/\n+/).map(s=>s.trim()).filter(Boolean) : []
+      };
+
+      emotions.unshift(emotion);
+      save(keys.emotions, emotions);
+      pushHistory('added', emotion.name);
+      updateStats();
+
+      ['newName','newKeywords','newDesc','newArt','newShot','newScript'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('newMode').value = 'all';
+      addStatus.textContent = `已加入情绪：${emotion.name}`;
+      addStatus.className = 'small status ok';
+    }
+
+    function resetDefaults(){
+      emotions = JSON.parse(JSON.stringify(defaultEmotions));
+      usedNames = new Set();
+      currentEmotion = null;
+      save(keys.emotions, emotions);
+      save(keys.used, []);
+      save(keys.current, null);
+      updateStats();
+      emotionDisplay.textContent = '点这里开始';
+      emotionSub.textContent = '让观众主要看到这里';
+      renderDetail(null);
+      pushHistory('added', '已恢复默认情绪库');
+      document.getElementById('addStatus').textContent = '默认情绪库已恢复。';
+      document.getElementById('addStatus').className = 'small status ok';
+    }
+
+    function copyCurrent(){
+      const text = currentEmotion ? [
+        `情绪：${currentEmotion.name}`,
+        `关键词：${(currentEmotion.keywords||[]).join(' / ')}`,
+        `描述：${currentEmotion.desc || ''}`,
+        '',
+        '绘画元素：',
+        ...(currentEmotion.art || []),
+        '',
+        '镜头建议：',
+        ...(currentEmotion.shots || []),
+        '',
+        '视频文案：',
+        ...(currentEmotion.script || [])
+      ].join('\n') : '还没有抽取情绪。';
+      navigator.clipboard.writeText(text);
+    }
+
+    function saveFanLink(){
+      const input = document.getElementById('fanLinkInput').value.trim();
+      const status = document.getElementById('fanLinkStatus');
+      const openBtn = document.getElementById('openFanLinkBtn');
+      fanLink = input;
+      save(keys.fan, fanLink);
+      if(fanLink){
+        openBtn.href = fanLink;
+        status.textContent = '投稿链接已保存。';
+        status.className = 'small status ok';
+      }else{
+        openBtn.href = '#';
+        status.textContent = '还没有设置真实的投稿链接。';
+        status.className = 'small';
+      }
+    }
+
+    document.querySelectorAll('.tab').forEach(tab=>{
+      tab.onclick = ()=>switchScreen(tab.dataset.screen);
+    });
+
+    document.getElementById('spinBtn').onclick = spin;
+    document.getElementById('centerSpin').onclick = spin;
+    document.getElementById('markUsedBtn').onclick = markUsed;
+    document.getElementById('addEmotionBtn').onclick = addEmotion;
+    document.getElementById('resetDefaultsBtn').onclick = resetDefaults;
+    document.getElementById('copyResultBtn').onclick = copyCurrent;
+    document.getElementById('saveFanLinkBtn').onclick = saveFanLink;
+
+    renderModes();
+    updateStats();
+    renderHistory();
+    renderDetail(currentEmotion);
+    if(currentEmotion){
+      emotionDisplay.textContent = currentEmotion.name;
+      emotionSub.textContent = currentEmotion.desc || '已抽取';
+    }
+    document.getElementById('fanLinkInput').value = fanLink || '';
+    if(fanLink){
+      document.getElementById('openFanLinkBtn').href = fanLink;
+      document.getElementById('fanLinkStatus').textContent = '投稿链接已保存。';
+      document.getElementById('fanLinkStatus').className = 'small status ok';
+    }
+  </script>
+</body>
+</html>
