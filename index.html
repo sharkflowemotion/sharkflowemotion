@@ -1,639 +1,1154 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>情绪灵感机 · Mobile v4</title>
-  <meta name="theme-color" content="#0b0b0b" />
-  <style>
-    :root{
-      --bg:#080808;
-      --panel:#121212;
-      --panel2:#171717;
-      --line:#272727;
-      --text:#f5f5f5;
-      --muted:#9b9b9b;
-      --soft:#7d7d7d;
-      --accent:#f0f0f0;
-      --ok:#9fd39f;
-      --warn:#d39f9f;
-      --radius:22px;
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",Arial,sans-serif}
-    body{min-height:100vh}
-    .app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;background:linear-gradient(180deg,#080808,#0d0d0d)}
-    .screen{display:none;padding:18px 16px 0}
-    .screen.active{display:block}
-    .topbar{padding:6px 2px 10px;display:flex;justify-content:space-between;align-items:center}
-    .title{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#cfcfcf}
-    .pill{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:12px}
-    .hero{
-      margin-top:8px;border:1px solid var(--line);border-radius:30px;padding:18px;
-      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
-      box-shadow:0 0 40px rgba(255,255,255,.04);
-    }
-    .hero h1{margin:0;font-size:34px;line-height:1.03;letter-spacing:-.04em}
-    .sub{margin-top:10px;color:var(--muted);font-size:14px;line-height:1.7}
-    .mode-row{display:flex;gap:8px;overflow:auto;padding:4px 0 2px;margin-top:16px}
-    .chip{white-space:nowrap;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
-    .chip.active{background:#f3f3f3;color:#111;border-color:#f3f3f3}
-    .spin-wrap{
-      margin-top:16px;border:1px solid var(--line);border-radius:28px;min-height:430px;padding:16px;
-      background:
-        radial-gradient(circle at center, rgba(255,255,255,.07), rgba(255,255,255,.02) 26%, rgba(255,255,255,.01) 52%, transparent 70%),
-        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center
-    }
-    .tap-note{
-      position:absolute;top:16px;left:50%;transform:translateX(-50%);
-      padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
-      font-size:12px;color:#d5d5d5;backdrop-filter:blur(10px)
-    }
-    .wheel{
-      width:min(88vw,360px);height:min(88vw,360px);max-width:360px;max-height:360px;border-radius:50%;
-      border:1px solid rgba(255,255,255,.12);position:relative;display:grid;place-items:center;
-      box-shadow:inset 0 0 50px rgba(255,255,255,.03),0 0 50px rgba(255,255,255,.03)
-    }
-    .wheel::before,.wheel::after{
-      content:"";position:absolute;border-radius:50%;border:1px dashed rgba(255,255,255,.06)
-    }
-    .wheel::before{inset:7%}
-    .wheel::after{inset:20%;border-style:solid;border-color:rgba(255,255,255,.05)}
-    .pointer{
-      position:absolute;top:12px;left:50%;transform:translateX(-50%);
-      width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:20px solid #f1f1f1;
-      filter:drop-shadow(0 0 12px rgba(255,255,255,.2))
-    }
-    .center{
-      width:56%;height:56%;border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;
-      text-align:center;padding:18px;border:1px solid rgba(255,255,255,.12);
-      background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.16), rgba(255,255,255,.03) 56%, rgba(255,255,255,.02) 72%);
-      cursor:pointer;user-select:none
-    }
-    .center:active{transform:scale(.985)}
-    .center-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-    .emotion{margin-top:10px;font-size:34px;font-weight:700;line-height:1.05;letter-spacing:-.04em}
-    .emotion-sub{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.6}
-    .spinning .wheel{animation:turn 5.2s linear infinite}
-    .spinning .emotion{animation:flicker .16s linear infinite}
-    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;width:100%}
-    button, .btn{
-      border:1px solid var(--line);background:#141414;color:var(--text);
-      border-radius:18px;padding:14px 14px;font-size:14px;cursor:pointer;text-align:center;text-decoration:none
-    }
-    button.primary,.btn.primary{background:#f3f3f3;color:#111;border-color:#f3f3f3;font-weight:600}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
-    .stat{border:1px solid var(--line);background:#111;border-radius:18px;padding:14px}
-    .num{font-size:28px;font-weight:700}
-    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .section{margin-top:16px;border:1px solid var(--line);background:var(--panel);border-radius:24px;padding:16px}
-    .section h2{margin:0 0 10px;font-size:18px}
-    .list{display:grid;gap:10px}
-    .item{padding:12px 14px;border-radius:16px;border:1px solid #252525;background:#141414;line-height:1.65;color:#e2e2e2}
-    .big-name{font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-.04em}
-    .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-    .tag{padding:7px 12px;border-radius:999px;background:#1b1b1b;border:1px solid var(--line);font-size:12px}
-    input,textarea,select{
-      width:100%;background:#0f0f0f;border:1px solid var(--line);color:var(--text);
-      border-radius:16px;padding:13px 14px;font-size:14px;outline:none
-    }
-    textarea{min-height:90px;resize:vertical}
-    .field{margin-top:12px}
-    .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
-    .muted{color:var(--muted)}
-    .small{font-size:12px;color:var(--soft)}
-    .status.ok{color:var(--ok)}
-    .status.warn{color:var(--warn)}
-    .history{display:grid;gap:10px}
-    .history-row{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#111}
-    .bottom-nav{
-      position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-      background:linear-gradient(to top, rgba(8,8,8,.98), rgba(8,8,8,.92));
-      backdrop-filter:blur(14px)
-    }
-    .bottom-nav-inner{
-      max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
-      border:1px solid var(--line);background:#101010;border-radius:22px;padding:8px
-    }
-    .tab{
-      border-radius:16px;padding:10px 6px;text-align:center;color:var(--muted);font-size:12px;cursor:pointer
-    }
-    .tab.active{background:#1a1a1a;color:#fff}
-    a.inline{color:#fff}
-    @keyframes turn{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-    @keyframes flicker{0%{opacity:.5}50%{opacity:1}100%{opacity:.6}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sharkflow Emotion v7</title>
+<meta name="theme-color" content="#090909" />
+<style>
+:root{
+  --bg:#070707;
+  --bg2:#0d0d0f;
+  --panel:rgba(20,20,22,.82);
+  --panel2:rgba(255,255,255,.04);
+  --line:rgba(255,255,255,.09);
+  --line2:rgba(255,255,255,.15);
+  --text:#f4f4f5;
+  --muted:#a1a1aa;
+  --soft:#7a7a82;
+  --bright:#fafafa;
+  --shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",Arial,sans-serif;background:
+radial-gradient(circle at 20% 0%, rgba(255,255,255,.08), transparent 24%),
+radial-gradient(circle at 85% 18%, rgba(201,201,215,.06), transparent 22%),
+linear-gradient(180deg,#050505 0%,#09090b 38%,#0b0b0d 100%);}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
+linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 24%),
+radial-gradient(circle at 50% 12%, rgba(255,255,255,.03), transparent 24%),
+radial-gradient(circle at 50% 85%, rgba(255,255,255,.02), transparent 20%);
+filter:blur(6px);opacity:.8;}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding:16px 14px 110px;position:relative}
+.screen{display:none;animation:fade .25s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 12px}
+.title{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#d8d8dc}
+.pill{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;color:var(--muted);backdrop-filter:blur(18px)}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);backdrop-filter:blur(20px)}
+.hero{padding:18px}
+.hero h1{margin:0;font-size:34px;line-height:1.03;letter-spacing:-.05em}
+.sub{margin-top:10px;color:var(--muted);font-size:14px;line-height:1.7}
+.mode-row{display:flex;gap:8px;overflow:auto;padding-top:14px;padding-bottom:2px}
+.chip{white-space:nowrap;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:#101012;color:var(--muted);font-size:13px;cursor:pointer}
+.chip.active{background:#f3f3f4;color:#111;border-color:#f3f3f4}
+.spin-wrap{margin-top:16px;padding:18px;border-radius:30px;border:1px solid var(--line);position:relative;overflow:hidden;background:
+radial-gradient(circle at 50% 35%, rgba(255,255,255,.08), rgba(255,255,255,.03) 26%, rgba(255,255,255,.015) 48%, transparent 70%),
+linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));}
+.spin-wrap::before{content:"";position:absolute;inset:-20%;pointer-events:none;background:
+radial-gradient(circle at 50% 50%, rgba(255,255,255,.05), transparent 32%),
+radial-gradient(circle at 50% 50%, rgba(171,171,182,.035), transparent 56%);
+filter:blur(22px);}
+.needle{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid #f2f2f4;filter:drop-shadow(0 0 12px rgba(255,255,255,.18));z-index:2}
+.wheel{position:relative;width:min(86vw,360px);height:min(86vw,360px);margin:8px auto 0;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 0 70px rgba(255,255,255,.04),0 0 50px rgba(255,255,255,.03)}
+.wheel::before,.wheel::after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.08);pointer-events:none}
+.wheel::before{inset:9%}
+.wheel::after{inset:22%}
+.orbit{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+.orbit span{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(228,228,235,.82);box-shadow:0 0 14px rgba(255,255,255,.12)}
+.orbit span:nth-child(1){top:14%;left:16%}
+.orbit span:nth-child(2){top:23%;left:28%;width:6px;height:6px}
+.orbit span:nth-child(3){top:14%;right:17%;width:10px;height:10px}
+.orbit span:nth-child(4){top:48%;left:12%;width:9px;height:9px}
+.orbit span:nth-child(5){right:11%;top:56%;width:11px;height:11px}
+.orbit span:nth-child(6){bottom:18%;left:33%;width:10px;height:10px}
+.center{position:relative;z-index:1;width:58%;height:58%;border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;border:1px solid rgba(255,255,255,.12);background:
+radial-gradient(circle at 50% 35%, rgba(255,255,255,.16), rgba(255,255,255,.05) 54%, rgba(255,255,255,.02) 72%);
+cursor:pointer}
+.center-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.emotion-cn{margin-top:10px;font-size:34px;font-weight:760;line-height:1.03;letter-spacing:-.05em}
+.emotion-en{margin-top:8px;color:#d7d7dc;font-size:15px;letter-spacing:.04em}
+.emotion-desc{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.6}
+.result-card,.section{margin-top:16px;padding:16px;border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));border:1px solid var(--line);box-shadow:var(--shadow)}
+.result-title,.section h2{margin:0 0 10px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.result-body,.grid,.history,.library{display:grid;gap:10px}
+.item,.history-row,.library-card{padding:13px 14px;border-radius:18px;background:rgba(15,15,16,.9);border:1px solid rgba(255,255,255,.08);line-height:1.65}
+.item.smallish{font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+button,.btn{width:100%;border:1px solid var(--line);background:#151518;color:var(--text);border-radius:18px;padding:14px 14px;font-size:14px;cursor:pointer}
+button.primary,.btn.primary{background:#f3f3f4;color:#121214;border-color:#f3f3f4;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{padding:14px;border:1px solid var(--line);border-radius:18px;background:#0f0f11}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px}
+.num{font-size:28px;font-weight:760}
+.big-name{font-size:32px;font-weight:760;line-height:1.04;letter-spacing:-.05em}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tag{padding:7px 12px;border-radius:999px;background:#17171a;border:1px solid var(--line);font-size:12px;color:#e9e9ef}
+.dual{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+input,textarea{width:100%;background:#0c0c0e;border:1px solid var(--line);color:var(--text);border-radius:16px;padding:13px 14px;font-size:14px;outline:none}
+textarea{min-height:110px;resize:vertical}
+.field{margin-top:12px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+.note{margin-top:12px;padding:13px 14px;border-radius:16px;background:#141417;border:1px solid rgba(255,255,255,.07);color:#d4d4da;font-size:13px;line-height:1.65}
+.small{font-size:12px;color:var(--soft);line-height:1.65}
+.library{grid-template-columns:1fr}
+.library-card{cursor:pointer;transition:.18s transform ease,.18s border-color ease}
+.library-card:active{transform:scale(.99)}
+.library-card strong{display:block;font-size:18px;line-height:1.2}
+.library-card span{display:block;color:var(--muted);font-size:12px;margin-top:6px}
+.library-card p{margin:8px 0 0;color:#d7d7dd;font-size:13px;line-height:1.55}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top, rgba(6,6,7,.98), rgba(6,6,7,.9));backdrop-filter:blur(18px)}
+.bottom-nav-inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-radius:24px;background:#0f0f11;border:1px solid var(--line)}
+.tab{padding:10px 4px;border-radius:16px;text-align:center;color:var(--muted);font-size:12px;cursor:pointer}
+.tab.active{background:#1b1b1f;color:#fff}
+.hidden{display:none !important}
+.empty{padding:18px;border-radius:18px;text-align:center;color:var(--muted);border:1px dashed rgba(255,255,255,.08)}
+.spinning .wheel{animation:spin 4.6s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.english-fade{opacity:0;transform:translateY(4px);transition:opacity .45s ease,transform .45s ease}
+.english-fade.show{opacity:1;transform:none}
+.work-card{padding:13px 14px;border-radius:18px;background:rgba(15,15,16,.9);border:1px solid rgba(255,255,255,.08);line-height:1.65}
+.work-img{width:100%;display:block;border-radius:14px;margin-top:10px;border:1px solid rgba(255,255,255,.08)}
+.work-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+
+
+.done-badge{position:absolute;top:10px;right:10px;padding:4px 8px;border-radius:999px;background:#f3f3f4;color:#111;font-size:11px;font-weight:700}
+.delete-btn{background:#1a1a1d !important;color:#f5f5f7 !important;border:1px solid rgba(255,255,255,.08) !important}
+.library-card{position:relative}
+.back-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.back-btn{width:auto !important;padding:10px 14px !important;border-radius:14px !important}
+.entry-photo{width:100%;display:block;border-radius:16px;border:1px solid rgba(255,255,255,.08);margin-top:12px}
+
+
+.collapse-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.collapse-arrow{transition:transform .22s ease;color:var(--muted)}
+.collapsed .collapse-arrow{transform:rotate(-90deg)}
+.collapsible-content{overflow:hidden;transition:max-height .25s ease, opacity .2s ease, margin-top .2s ease;max-height:2000px;opacity:1}
+.collapsible-content.is-hidden{max-height:0;opacity:0;margin-top:0 !important}
+
+@media (max-width:420px){
+  .hero h1{font-size:30px}
+  .emotion-cn{font-size:30px}
+  .big-name{font-size:28px}
+  .library{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
-  <div class="app">
-    <section class="screen active" id="screen-spin">
-      <div class="topbar">
-        <div class="title">Emotion Engine</div>
-        <div class="pill">手机版布局</div>
-      </div>
+<div class="app">
+  <section class="screen active" id="screen-emotion">
+    <div class="topbar"><div class="title">Sharkflow Emotion</div><div class="pill">black · grey · mist</div></div>
+    <div class="panel hero">
+      <h1 id="quoteCn">情绪会留下形状。</h1>
+      <div class="sub" id="quoteEn">Emotion leaves a shape behind.</div>
+      <div class="mode-row" id="modeRow"></div>
 
-      <div class="hero">
-        <h1>抽一个情绪，<br>拍成你的视频开场。</h1>
-        <div class="sub">现在可以直接点击中间 UI 画面抽取，不只依赖下面的按钮，更方便你拍摄“随机抽情绪”的画面。</div>
-
-        <div class="mode-row" id="modeRow"></div>
-
-        <div class="spin-wrap" id="spinWrap">
-          <div class="tap-note">点击中间圆形即可抽取</div>
-          <div class="pointer"></div>
-          <div class="wheel">
-            <div class="center" id="centerSpin">
-              <div class="center-label">Tap To Draw</div>
-              <div class="emotion" id="emotionDisplay">点这里开始</div>
-              <div class="emotion-sub" id="emotionSub">让观众主要看到这里</div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="primary" id="spinBtn">开始抽取情绪</button>
-            <button id="markUsedBtn">确认已拍摄 / 已使用</button>
-          </div>
-
-          <div class="stats">
-            <div class="stat"><div class="label">总情绪</div><div class="num" id="statTotal">0</div></div>
-            <div class="stat"><div class="label">可抽取</div><div class="num" id="statAvailable">0</div></div>
-            <div class="stat"><div class="label">已使用</div><div class="num" id="statUsed">0</div></div>
+      <div class="spin-wrap" id="spinWrap">
+        <div class="needle"></div>
+        <div class="wheel">
+          <div class="orbit"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="center" id="centerSpin" onclick="spin(); return false;">
+            <div class="center-label">Today's Emotion</div>
+            <div class="emotion-cn" id="emotionCn">今天的情绪是？</div>
+            <div class="emotion-en english-fade" id="emotionEn">What is today's emotion?</div>
+            <div class="emotion-desc" id="emotionHint">点一下，让它出现。</div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="screen" id="screen-detail">
-      <div class="topbar">
-        <div class="title">详情</div>
-        <div class="pill">你自己看</div>
-      </div>
-
-      <div class="section">
-        <div class="big-name" id="detailName">还没有抽取</div>
-        <div class="sub" id="detailDesc">抽取后，这里会显示完整说明。</div>
-        <div class="tags" id="detailTags"></div>
-      </div>
-
-      <div class="section">
-        <h2>创作方向</h2>
-        <div class="list" id="directionList"></div>
-      </div>
-
-      <div class="section">
-        <h2>绘画元素参考</h2>
-        <div class="list" id="artList"></div>
-      </div>
-
-      <div class="section">
-        <h2>镜头 / 画面建议</h2>
-        <div class="list" id="shotList"></div>
-      </div>
-
-      <div class="section">
-        <h2>视频文案</h2>
-        <div class="list" id="scriptList"></div>
-      </div>
-
-      <div class="section">
-        <button id="copyResultBtn">复制当前结果</button>
-      </div>
-    </section>
-
-    <section class="screen" id="screen-library">
-      <div class="topbar">
-        <div class="title">情绪库</div>
-        <div class="pill">不再放右边</div>
-      </div>
-
-      <div class="section">
-        <h2>新增一个情绪</h2>
-        <div class="small">你自己想到的，或者以后观众投稿给你的，都可以从这里加入。</div>
-
-        <div class="field">
-          <label>情绪名称</label>
-          <input id="newName" placeholder="例如：失控前的安静 / 被理解 / 窒息感">
+        <div class="result-card">
+          <div class="result-title">抽中结果 / Drawn Result</div>
+          <div class="result-body">
+            <div class="item smallish" id="resultDescCn">抽取后，这里会显示中文描述。</div>
+            <div class="item smallish english-fade" id="resultDescEn"></div>
+          </div>
         </div>
 
-        <div class="field">
-          <label>关键词（逗号分隔）</label>
-          <input id="newKeywords" placeholder="例如：潮湿,玻璃,呼吸,黑水">
+        <div class="actions">
+          <button type="button" class="primary" id="spinBtn" onclick="spin(); return false;">抽取情绪</button>
+          <button type="button" id="markUsedBtn" onclick="markUsed(); return false;">确认已使用</button>
         </div>
 
-        <div class="field">
-          <label>风格类型</label>
-          <select id="newMode">
-            <option value="all">全部情绪</option>
-            <option value="dark">偏暗黑</option>
-            <option value="tattoo">偏纹身</option>
-            <option value="video">偏视频</option>
-          </select>
+        <div class="stats">
+          <div class="stat"><div class="label">总情绪</div><div class="num" id="statTotal">52</div></div>
+          <div class="stat"><div class="label">可抽取</div><div class="num" id="statAvailable">52</div></div>
+          <div class="stat"><div class="label">已使用</div><div class="num" id="statUsed">0</div></div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="field">
-          <label>一句情绪描述</label>
-          <textarea id="newDesc" placeholder="例如：像情绪沉到底部以后，表面却看起来什么都没发生。"></textarea>
-        </div>
+  <section class="screen" id="screen-detail">
+    <div class="topbar"><div class="title">创作者详情</div><div class="pill">creator mode</div></div>
+    <div class="section">
+      <div class="big-name" id="detailName">还没有抽取</div>
+      <div class="sub" id="detailDesc">抽取或从情绪库点选后，这里会显示完整说明。</div>
+      <div class="tags" id="detailTags"></div>
+    </div>
+    <div class="section">
+      <h2>创作方向</h2>
+      <div class="grid" id="directionList"></div>
+    </div>
+    <div class="section">
+      <h2>绘画元素参考</h2>
+      <div class="grid" id="artList"></div>
+    </div>
+    <div class="section">
+      <h2>镜头 / 画面建议</h2>
+      <div class="grid" id="shotList"></div>
+    </div>
+    <div class="section">
+      <h2>视频文案</h2>
+      <div class="grid" id="scriptList"></div>
+    </div>
+    <div class="section">
+      <h2>编辑当前情绪</h2>
+      <div class="small">这里可以修改当前打开的情绪内容。保存后，情绪库会同步更新。</div>
+      <div class="field"><label>中文名</label><input id="editEmotionName"></div>
+      <div class="field"><label>英文名</label><input id="editEmotionEn"></div>
+      <div class="field"><label>情绪描述（中文）</label><textarea id="editEmotionDesc"></textarea></div>
+      <div class="field"><label>情绪描述（英文）</label><textarea id="editEmotionDescEn"></textarea></div>
+      <div class="field"><label>关键词（用 / 分隔）</label><input id="editEmotionKeywords"></div>
+      <div class="field"><label>创作方向（用 / 分隔）</label><textarea id="editEmotionDirections"></textarea></div>
+      <div class="field"><label>绘画元素（用 / 分隔）</label><textarea id="editEmotionArts"></textarea></div>
+      <div class="actions">
+        <button class="primary" id="saveEmotionEditBtn">保存情绪编辑</button>
+        <button id="resetEmotionEditBtn">恢复当前内容</button>
+      </div>
+    </div>
+  </section>
 
-        <div class="field">
-          <label>绘画元素参考</label>
-          <textarea id="newArt" placeholder="例如：玻璃水痕、断裂花瓣、低饱和阴影、局部白边"></textarea>
-        </div>
-
-        <div class="field">
-          <label>镜头 / 画面参考</label>
-          <textarea id="newShot" placeholder="例如：正面静止镜头，手停顿 2 秒，再切近景细节"></textarea>
-        </div>
-
-        <div class="field">
-          <label>视频文案种子</label>
-          <textarea id="newScript" placeholder="例如：有些情绪不是突然来的，而是被你反复安静地喂大。"></textarea>
-        </div>
-
+  <section class="screen" id="screen-library">
+    <div class="topbar"><div class="title">情绪库</div><div class="pill">growing library</div></div>
+    <div class="section" id="newEmotionSection">
+      <div class="collapse-toggle" id="newEmotionToggle">
+        <h2 style="margin:0">新增情绪</h2>
+        <div class="collapse-arrow" id="newEmotionArrow">⌃</div>
+      </div>
+      <div class="collapsible-content" id="newEmotionWrap" style="margin-top:10px">
+        <div class="small">你可以把新的情绪加入这个系统里，让它慢慢变成你自己的情绪库。</div>
+        <div class="field"><label>中文名</label><input id="newEmotionName" placeholder="例如：快要碎掉前的平静"></div>
+        <div class="field"><label>英文名</label><input id="newEmotionEn" placeholder="例如：Stillness Before Fracture"></div>
+        <div class="field"><label>情绪描述（中文）</label><textarea id="newEmotionDesc" placeholder="写一句中文描述"></textarea></div>
+        <div class="field"><label>情绪描述（英文）</label><textarea id="newEmotionDescEn" placeholder="Write one English description"></textarea></div>
+        <div class="field"><label>关键词（用 / 分隔）</label><input id="newEmotionKeywords" placeholder="例如：裂缝 / 呼吸 / 预兆"></div>
+        <div class="field"><label>创作方向（用 / 分隔）</label><textarea id="newEmotionDirections" placeholder="例如：边缘像快要断裂 / 画面不要太满"></textarea></div>
+        <div class="field"><label>绘画元素（用 / 分隔）</label><textarea id="newEmotionArts" placeholder="例如：薄雾 / 裂痕 / 金属边缘 / 倒影"></textarea></div>
         <div class="actions">
           <button class="primary" id="addEmotionBtn">加入情绪库</button>
-          <button id="resetDefaultsBtn">恢复默认情绪库</button>
+          <button id="clearEmotionBtn">清空</button>
         </div>
-        <div class="small status" id="addStatus" style="margin-top:10px;"></div>
       </div>
-
-      <div class="section">
-        <h2>粉丝投稿入口</h2>
-        <div class="small">这里可以放一个真正给粉丝使用的投稿链接。现在我先给你做了可编辑入口位，你把真实表单链接粘进去就能用了。</div>
-
-        <div class="field">
-          <label>投稿链接 URL</label>
-          <input id="fanLinkInput" placeholder="例如：https://forms.gle/... 或 飞书表单链接">
-        </div>
-
-        <div class="actions">
-          <button class="primary" id="saveFanLinkBtn">保存投稿链接</button>
-          <a class="btn" id="openFanLinkBtn" href="#" target="_blank" rel="noopener noreferrer">打开粉丝投稿页</a>
-        </div>
-        <div class="small" id="fanLinkStatus" style="margin-top:10px;">还没有设置真实的投稿链接。</div>
+    </div>
+    <div class="section" id="librarySection">
+      <div class="collapse-toggle" id="libraryToggle">
+        <h2 style="margin:0">全部情绪</h2>
+        <div class="collapse-arrow" id="libraryArrow">⌃</div>
       </div>
-    </section>
-
-    <section class="screen" id="screen-me">
-      <div class="topbar">
-        <div class="title">我的</div>
-        <div class="pill">记录</div>
+      <div class="small" style="margin-top:10px">点击任意情绪，会自动打开这个情绪自己的页面。</div>
+      <div class="collapsible-content" id="libraryListWrap" style="margin-top:10px">
+        <div class="library" id="libraryList"></div>
       </div>
+    </div>
+  </section>
 
-      <div class="section">
-        <h2>最近记录</h2>
+  <section class="screen" id="screen-inbox">
+    <div class="topbar"><div class="title">收件</div><div class="pill">test inbox</div></div>
+    <div class="section" id="historySection">
+      <div class="collapse-toggle" id="historyToggle">
+        <h2 style="margin:0">最近抽取记录</h2>
+        <div class="collapse-arrow" id="historyArrow">⌃</div>
+      </div>
+      <div class="history collapsible-content" id="historyListWrap" style="margin-top:10px">
         <div class="history" id="historyList"></div>
       </div>
-
-      <div class="section">
-        <h2>关于这版</h2>
-        <div class="list">
-          <div class="item">现在支持直接点击中心 UI 抽取情绪。</div>
-          <div class="item">底部 tab 已拆成四页，更接近微信底部导航感。</div>
-          <div class="item">粉丝投稿链接已独立成入口位，但要真正收集投稿，仍然需要你放入一个真实表单链接。</div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <nav class="bottom-nav">
-    <div class="bottom-nav-inner">
-      <div class="tab active" data-screen="spin">抽取</div>
-      <div class="tab" data-screen="detail">详情</div>
-      <div class="tab" data-screen="library">情绪库</div>
-      <div class="tab" data-screen="me">我的</div>
     </div>
-  </nav>
+    <div class="section">
+      <h2>粉丝投稿收件箱</h2>
+      <div class="history" id="inboxList"></div>
+    </div>
+  </section>
 
-  <script>
-    const defaultEmotions = [
-      {name:"压抑", keywords:["沉默","呼吸","暗流"], mode:["all","dark","video"], desc:"像把很多声音都压进身体里，表面安静，里面却并不平静。", direction:["画面不要满，留出压迫性的黑色空间。","动作越少越好，让停顿自己说话。"], art:["深色留白","细线缠绕","下坠感阴影","被按住的花"], shots:["正面静止半身","慢切到手部细节","最后停笔 2 秒"], script:["有些情绪不是爆发出来的。","而是被你安静地压进身体里，压到连自己都快听不见。"]},
-      {name:"溺水感", keywords:["潮湿","窒息","下沉"], mode:["all","dark","video"], desc:"不是痛得尖锐，而是像被慢慢拖进更深的地方。", direction:["让画面有水感、反光感、拖曳感。","动作像在水里被削弱过一样。"], art:["玻璃水痕","液态黑影","漂浮发丝","白色反光"], shots:["慢速近景","镜头略俯拍","画面节奏拉长"], script:["有些情绪像水。","不会一下把你打碎，只会慢慢把你往下拖。"]},
-      {name:"迷恋", keywords:["靠近","温度","失衡"], mode:["all","video"], desc:"明知道危险，却还是想更靠近一点。", direction:["对比冷静与失控之间的拉扯。","不要拍得太热烈，保持克制会更有张力。"], art:["贴近的线条","互相靠拢的花瓣","局部发亮","细碎红痕"], shots:["先远后近","锁定手指细节","最后留一个没有说完的停顿"], script:["有时候靠近不是因为安全。","而是因为你明知道会失衡，还是想靠近。"]},
-      {name:"钝痛", keywords:["迟钝","余震","忍耐"], mode:["all","tattoo","dark"], desc:"它不锋利，但会一直在，像身体记住了某种重量。", direction:["纹身元素可以更克制，避免太满。","强调残留感，而不是爆发感。"], art:["旧伤感纹理","轻微破损","低饱和灰","发白边缘"], shots:["局部极近景","动作放慢","机器声极轻"], script:["最难处理的不是最疼的情绪。","而是那种不明显，却一直没有离开的。"]},
-      {name:"自救", keywords:["缝合","抓住","浮起"], mode:["all","tattoo","video"], desc:"并不是已经好了，而是开始学会把自己一点点捞起来。", direction:["让画面从压低转向微弱上升。","可以出现手、线、缠绕、缝合等象征。"], art:["缝线","上升的碎片","微光","断裂后重新连接"], shots:["从低处开始拍","结尾亮一点点","用慢呼吸感转场"], script:["我不是突然好起来的。","只是某一天开始，学会把自己一点点捞起来。"]},
-      {name:"幻灭", keywords:["裂开","清醒","坠落"], mode:["all","dark"], desc:"当你终于看清的时候，爱和想象一起碎掉了。", direction:["适合冷色、碎裂、静态构图。","不要太多动作，重点是看清之后的空。"], art:["破碎镜面","冷白光","锋利边缘","空椅子"], shots:["镜头固定","画面层次分离","结尾留黑"], script:["最安静的那一刻，通常不是释怀。","而是你终于看清，原来一切都不会变成你想的样子。"]},
-      {name:"被理解", keywords:["停住","接住","松动"], mode:["all","video"], desc:"像一直绷着的东西突然被轻轻接住。", direction:["可以更柔和，但不要甜。","重点是松动感。"], art:["柔软线条","暖灰","慢慢散开的墨","轻雾"], shots:["镜头更稳定","动作更轻","最后放慢呼吸"], script:["不是每一种温柔都会被看见。","但有些被理解，会让人突然安静下来。"]},
-      {name:"失控前的安静", keywords:["平静","预兆","裂缝"], mode:["all","dark","video"], desc:"表面越安静，越像有什么正在下面缓慢裂开。", direction:["适合先稳后失衡的结构。","用很小的变化制造不安。"], art:["细微裂缝","规整构图","一点点偏移","压低亮度"], shots:["前半段尽量稳","后半段细节切得更近","停顿比动作重要"], script:["真正可怕的，常常不是失控本身。","而是失控之前，那种过于安静的几秒。"]},
-      {name:"妒意", keywords:["比较","发热","隐秘"], mode:["all","dark"], desc:"一种不愿承认，却会在身体里悄悄发热的情绪。", direction:["不要表现成直接愤怒，而是更隐秘。","适合局部发亮和压暗共存。"], art:["暗处红点","尖锐植物","对照构图","局部反光"], shots:["面部不必出全","用手部或眼神替代","节奏短促"], script:["有些情绪不会大声说出来。","它只会在你否认的时候，悄悄开始发热。"]},
-      {name:"报复性清醒", keywords:["看透","切断","过冷"], mode:["all","dark","tattoo"], desc:"不是想原谅，而是突然什么都看得太清楚了。", direction:["适合更锋利、更克制的黑白灰。","线条可以偏硬。"], art:["刀锋感白边","干净切线","冷硬反差","断开的连接"], shots:["黑底高反差","动作极少","靠声音和停顿撑住"], script:["有时候清醒不是成长。","只是你终于不想再骗自己了。"]},
-      {name:"空掉", keywords:["抽离","无重力","发白"], mode:["all","video"], desc:"不像难过，更像突然什么都接不上。", direction:["减少信息量，让空白成为主体。","适合极简构图。"], art:["大片留白","轻灰过渡","悬空物体","模糊边缘"], shots:["远景更有效","动作越慢越好","环境声保留"], script:["不是所有低落都很明显。","有时候只是突然，什么都接不上了。"]},
-      {name:"偏执", keywords:["重复","锁定","无法放过"], mode:["all","dark","tattoo"], desc:"一件事、一句话、一个眼神，在脑海里不断被反复磨亮。", direction:["适合重复元素。","让结构本身体现执拗。"], art:["重复针脚","循环图形","对称失衡","密集细节"], shots:["同一动作重复拍","切同一个位置","声音更机械"], script:["有些执念不是放不下。","而是它已经在你脑子里，把自己磨成了刀。"]},
-      {name:"松弛后的疲惫", keywords:["卸下","后知后觉","塌下来"], mode:["all","video"], desc:"不是结束了就轻松，而是终于放下以后，疲惫才慢慢浮上来。", direction:["适合慢下来，甚至有一点塌陷感。","让结束成为真正的开始。"], art:["垂下的线","软掉的花","阴影扩散","坐姿"], shots:["结尾更重要","动作停下来","镜头不用多"], script:["有时候不是坚持最累。","而是你终于松开的时候，才发现自己已经很累了。"]},
-      {name:"想念", keywords:["残留","旧温度","回响"], mode:["all","video"], desc:"它不一定悲伤，只是某些旧的温度突然又回来了。", direction:["画面可更轻，但不要甜腻。","重点是残留。"], art:["旧纸纹理","泛黄边缘","柔和回光","停留过的痕迹"], shots:["慢慢推近","留环境声","不要切太碎"], script:["想念不是回头。","只是有些温度，过了很久还是会突然回来。"]},
-      {name:"愤怒", keywords:["刺痛","爆点","反击"], mode:["all","dark","tattoo"], desc:"它想往外冲，但也可能被你很用力地按着。", direction:["可以控制在克制边缘。","留一点没彻底爆开的感觉会更高级。"], art:["锐利线条","拉扯痕","深黑块面","爆裂边缘"], shots:["切镜更快一点","音效更硬","最后戛然而止"], script:["愤怒不总是大声。","有时候它只是安静地，在身体里磨出一层锋利。"]},
-      {name:"羞耻", keywords:["回避","蜷缩","发烫"], mode:["all","dark"], desc:"像想把自己藏起来，却又清楚地感觉到自己正在被看见。", direction:["适合局部遮挡和不完整构图。","不用直视镜头。"], art:["遮挡","弯曲线条","局部红","收缩感"], shots:["避开正脸","更多背面或侧面","近景比远景更有效"], script:["羞耻感最安静。","它不会推着你说话，只会让你想把自己藏起来。"]}
-    ];
+  <section class="screen" id="screen-library-entry">
+    <div class="topbar"><div class="title">情绪档案</div><div class="pill">library entry</div></div>
+    <div class="section">
+      <div class="back-row">
+        <button class="back-btn" id="backToLibraryBtn">返回情绪库</button>
+      </div>
+      <div class="big-name" id="entryEmotionName">情绪名</div>
+      <div class="sub" id="entryEmotionDesc">这里会显示这个情绪的描述。</div>
+    </div>
+    <div class="section">
+      <h2>完成作品记录</h2>
+      <div class="small">这里不是详细页，而是这个情绪自己的完成页。你可以放一张完成作品、日期和一句话。</div>
+      <div class="field"><label>完成作品照片</label><input type="file" id="entryWorkImageInput" accept="image/*"></div>
+      <div class="field"><label>日期</label><input type="date" id="entryWorkDateInput"></div>
+      <div class="field"><label>一句话</label><input id="entryWorkNoteInput" placeholder="例如：第一次把压抑画成金属感线条"></div>
+      <div class="actions">
+        <button class="primary" id="saveEntryWorkBtn">保存</button>
+        <button id="clearEntryWorkBtn">清空</button>
+      </div>
+      <div id="entryCurrentCard"></div>
+    </div>
+  </section>
 
-    const modeLabels = {all:"全部",dark:"暗黑",tattoo:"纹身",video:"视频"};
-    const keys = {
-      emotions:'emotion_mobile_v4_library',
-      used:'emotion_mobile_v4_used',
-      history:'emotion_mobile_v4_history',
-      current:'emotion_mobile_v4_current',
-      mode:'emotion_mobile_v4_mode',
-      fan:'emotion_mobile_v4_fan_link'
+</div>
+
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="tab active" data-screen="emotion">情绪</div>
+    <div class="tab" data-screen="detail">详细</div>
+    <div class="tab" data-screen="library">情绪库</div>
+    <div class="tab" data-screen="inbox">收件</div>
+  </div>
+</nav>
+
+<script>
+
+const quotes = [{"cn": "有些情绪不是爆发出来的。", "en": "Some feelings do not erupt. They stay quietly under the skin."}, {"cn": "你留下的不一定是答案，也可能是情绪本身。", "en": "What remains may not be an answer, but the feeling itself."}, {"cn": "最安静的那一刻，往往不是平静。", "en": "The quietest moment is not always peace."}, {"cn": "有些感受不会消失，只会换一种方式出现。", "en": "Some feelings do not vanish. They return in another form."}, {"cn": "有时候你画下来的，不是图，而是当时的呼吸。", "en": "Sometimes what you draw is not an image, but the breath of that moment."}, {"cn": "不是每一种情绪都需要解释。", "en": "Not every feeling needs an explanation."}];
+const emotions = [{"name": "压抑", "en": "Suppression", "desc": "像把很多声音压进身体里，表面安静，里面却并不平静。", "desc_en": "沉默沿着肋骨堆积，呼吸被折成很薄的一层。"}, {"name": "溺水感", "en": "Drowning", "desc": "不是痛得尖锐，而是像被慢慢拖进更深的地方。", "desc_en": "下沉没有声音，只有空气一点点被抽走。"}, {"name": "迷恋", "en": "Fixation", "desc": "明知道危险，却还是想更靠近一点。", "desc_en": "目光反复停在同一个地方，像失控前的礼貌。"}, {"name": "钝痛", "en": "Dull Ache", "desc": "不锋利，但会一直在，像身体记住了某种重量。", "desc_en": "它不大声，却能持续很久地提醒你。"}, {"name": "自救", "en": "Self-Rescue", "desc": "不是已经好了，而是开始学会把自己一点点捞起来。", "desc_en": "你仍在水里，只是终于开始向上。"}, {"name": "幻灭", "en": "Disillusion", "desc": "当你终于看清的时候，爱和想象一起碎掉了。", "desc_en": "亮光退去后，剩下的是过于诚实的轮廓。"}, {"name": "被理解", "en": "Understood", "desc": "像一直绷着的东西突然被轻轻接住。", "desc_en": "不是被解释，而是被安静地看见。"}, {"name": "失控前的安静", "en": "Calm Before Ruin", "desc": "表面越安静，越像有什么正在下面缓慢裂开。", "desc_en": "安静不是平静，是即将断裂的前夜。"}, {"name": "妒意", "en": "Jealous Heat", "desc": "一种不愿承认，却会在身体里悄悄发热的情绪。", "desc_en": "它从比较里长出来，在沉默里变烫。"}, {"name": "报复性清醒", "en": "Cruel Clarity", "desc": "不是想原谅，而是突然什么都看得太清楚了。", "desc_en": "清醒像刀，连温柔都显得多余。"}, {"name": "空掉", "en": "Emptied Out", "desc": "不像难过，更像突然什么都接不上。", "desc_en": "世界还在继续，但你像暂时失去了接口。"}, {"name": "偏执", "en": "Obsession", "desc": "一件事在脑海里不断被反复磨亮。", "desc_en": "越想停下来，轮廓反而越清楚。"}, {"name": "松弛后的疲惫", "en": "After-Tension Exhaustion", "desc": "终于放下以后，疲惫才慢慢浮上来。", "desc_en": "不是突然垮掉，是解除防备后的沉。"}, {"name": "想念", "en": "Longing", "desc": "有些旧的温度会突然回来。", "desc_en": "它没有敲门，只是在某一刻重新靠近。"}, {"name": "愤怒", "en": "Anger", "desc": "它想往外冲，但也可能被你很用力地按着。", "desc_en": "热度在皮肤下面来回撞击。"}, {"name": "羞耻", "en": "Shame", "desc": "像想把自己藏起来，却又感觉自己正在被看见。", "desc_en": "你想消失，可目光先落在自己身上。"}, {"name": "迟来的释怀", "en": "Late Release", "desc": "像一扇门终于松开，但门后只剩回声。", "desc_en": "放下发生得很晚，所以余音更长。"}, {"name": "冻结", "en": "Frozen", "desc": "不是平静，是所有反应都被暂时封住。", "desc_en": "你还在这里，只是暂时没有温度。"}, {"name": "不甘", "en": "Reluctance", "desc": "明明知道该结束，却还是不想松手。", "desc_en": "理智已经离开，手指却没有。"}, {"name": "依赖", "en": "Dependence", "desc": "靠近不是因为安全，而是因为离不开。", "desc_en": "你贴近的不是温柔，而是缺口。"}, {"name": "麻木", "en": "Numbness", "desc": "感觉并没有消失，只是传不到表面。", "desc_en": "神经像被盖住，情绪变成遥远的震动。"}, {"name": "轻微崩塌", "en": "Soft Collapse", "desc": "不是瞬间碎裂，而是一点点沉下去。", "desc_en": "边缘没有声响，只是慢慢失去支撑。"}, {"name": "警觉", "en": "Hypervigilance", "desc": "身体比你更早知道危险来了。", "desc_en": "目光先绷紧，心跳随后跟上。"}, {"name": "回避", "en": "Avoidance", "desc": "不是不在意，只是不敢碰。", "desc_en": "你绕开它的路径，也绕开了自己。"}, {"name": "试探", "en": "Testing", "desc": "伸手之前，总想先看对方会不会退。", "desc_en": "每一次靠近都带着一点撤回。"}, {"name": "温柔的危险", "en": "Tender Threat", "desc": "越柔和，越让人失去戒备。", "desc_en": "柔软不是安全，有时只是更晚的刺。"}, {"name": "滞留", "en": "Lingering", "desc": "一段感觉已经过去，却一直没有离开。", "desc_en": "它没有发生在现在，却停留在现在。"}, {"name": "孤立", "en": "Isolation", "desc": "周围很安静，可你并不觉得安全。", "desc_en": "空白很大，足够把人和世界分开。"}, {"name": "怀疑", "en": "Doubt", "desc": "你反复确认，只因为始终不敢相信。", "desc_en": "再看一遍，不是为了答案，而是为了迟疑。"}, {"name": "心软", "en": "Soft-Hearted", "desc": "知道不该回头，却还是想再给一次机会。", "desc_en": "裂痕明明存在，温柔还是先一步。"}, {"name": "占有欲", "en": "Possessiveness", "desc": "不是爱得更深，而是怕失去得太快。", "desc_en": "你抓紧的不是对方，是自己的恐慌。"}, {"name": "恐惧", "en": "Fear", "desc": "它比你更快地收紧呼吸。", "desc_en": "你还没想明白，身体先做出反应。"}, {"name": "安心", "en": "Relief", "desc": "第一次不是绷着，而是真的能慢慢呼吸。", "desc_en": "肩膀放下来的时候，世界才重新有形状。"}, {"name": "落空", "en": "Letdown", "desc": "期待没有发生，空白先落了下来。", "desc_en": "你准备好了靠近，却只接住了空。"}, {"name": "无措", "en": "Disoriented", "desc": "不知道该往前还是后退，于是停在原地。", "desc_en": "方向太多，身体只好沉默。"}, {"name": "暗喜", "en": "Quiet Delight", "desc": "不是热烈的快乐，而是心里偷偷亮了一点。", "desc_en": "像黑里很小的一束光，只照到自己。"}, {"name": "失真", "en": "Distortion", "desc": "记忆和现实开始互相改写。", "desc_en": "画面还在，比例却早已不对。"}, {"name": "柔软", "en": "Tenderness", "desc": "不是脆弱，是你终于肯放轻一点。", "desc_en": "锋利收起后，轮廓仍然成立。"}, {"name": "窒闷", "en": "Stifled", "desc": "话没有说出口，胸口却先堵住了。", "desc_en": "空气还在，但流不过去。"}, {"name": "回潮", "en": "Return Tide", "desc": "以为过去了，却在某个瞬间重新涌上来。", "desc_en": "旧情绪像潮湿，从缝里慢慢返上来。"}, {"name": "无名的重", "en": "Nameless Weight", "desc": "说不出具体是什么，但它就是压着你。", "desc_en": "没有名字的东西，往往更沉。"}, {"name": "嫉妒后的羞耻", "en": "Shame After Jealousy", "desc": "先发热，再觉得自己难堪。", "desc_en": "情绪刚亮起，羞耻就立刻覆盖上去。"}, {"name": "想靠近又想逃", "en": "Push-Pull", "desc": "靠近时紧张，离开时又不甘心。", "desc_en": "拉扯像一根线，两端都是你。"}, {"name": "过度清醒", "en": "Overawake", "desc": "你看见了太多，所以再也睡不回去。", "desc_en": "意识太亮，夜反而更黑。"}, {"name": "钝化的快乐", "en": "Blunted Joy", "desc": "不是不快乐，只是快乐像隔了一层玻璃。", "desc_en": "你看见它，也知道它离你不远，但碰不到。"}, {"name": "缺氧", "en": "Breathless", "desc": "情绪像把空气一点点抽空。", "desc_en": "不是突然窒息，是缓慢失去氧气。"}, {"name": "余温", "en": "Afterwarmth", "desc": "结束以后，温度还在。", "desc_en": "人已经走远，热度却停在原地。"}, {"name": "隐痛", "en": "Hidden Pain", "desc": "看起来没事，其实一直在轻轻刺着。", "desc_en": "细小的疼会伪装成平静。"}, {"name": "胆怯", "en": "Timidity", "desc": "不是不想要，只是不敢伸手。", "desc_en": "愿望在前，身体却先后退。"}, {"name": "错位", "en": "Misaligned", "desc": "你们都在场，却不在同一个时空里。", "desc_en": "距离不是米数，是节奏。"}, {"name": "复燃", "en": "Rekindled", "desc": "本以为熄灭了，却又突然烧起来。", "desc_en": "灰烬里还留着很小的一点亮。"}, {"name": "悬而未落", "en": "Suspended", "desc": "事情没有结束，也没有真正开始。", "desc_en": "你停在中间，像被时间提着。"}];
+
+const descTranslations = {
+  "像把很多声音压进身体里，表面安静，里面却并不平静。":"It feels like pressing many voices into the body. Quiet outside, restless within.",
+  "不是痛得尖锐，而是像被慢慢拖进更深的地方。":"It is not a sharp pain, but a slow pull into deeper water.",
+  "明知道危险，却还是想更靠近一点。":"You know it is dangerous, yet you still want to move closer.",
+  "不锋利，但会一直在，像身体记住了某种重量。":"Not sharp, but constant, as if the body remembers a certain weight.",
+  "不是已经好了，而是开始学会把自己一点点捞起来。":"You are not healed yet. You are only beginning to pull yourself back up.",
+  "当你终于看清的时候，爱和想象一起碎掉了。":"When you finally see clearly, love and illusion break together.",
+  "像一直绷着的东西突然被轻轻接住。":"It feels like something tense has finally been caught gently.",
+  "表面越安静，越像有什么正在下面缓慢裂开。":"The calmer the surface looks, the more something underneath seems to be cracking.",
+  "一种不愿承认，却会在身体里悄悄发热的情绪。":"A feeling you do not want to admit, yet it quietly heats the body.",
+  "不是想原谅，而是突然什么都看得太清楚了。":"It is not forgiveness. It is simply seeing everything too clearly at once.",
+  "不像难过，更像突然什么都接不上。":"It does not feel like sadness, but like suddenly losing connection to everything.",
+  "一件事在脑海里不断被反复磨亮。":"One thing keeps being sharpened over and over in the mind.",
+  "终于放下以后，疲惫才慢慢浮上来。":"Only after letting go does the exhaustion slowly rise to the surface.",
+  "有些旧的温度会突然回来。":"Some old warmth returns without warning.",
+  "它想往外冲，但也可能被你很用力地按着。":"It wants to burst outward, but you may be forcing it down.",
+  "像想把自己藏起来，却又感觉自己正在被看见。":"It feels like wanting to hide yourself while still feeling seen.",
+  "像一扇门终于松开，但门后只剩回声。":"It feels like a door finally giving way, with only echoes left behind.",
+  "不是平静，是所有反应都被暂时封住。":"This is not calm. It is every reaction being temporarily sealed shut.",
+  "明明知道该结束，却还是不想松手。":"You know it should end, but you still do not want to let go.",
+  "靠近不是因为安全，而是因为离不开。":"Closeness is not about safety. It is because you cannot leave.",
+  "感觉并没有消失，只是传不到表面。":"The feeling has not disappeared. It just cannot reach the surface.",
+  "不是瞬间碎裂，而是一点点沉下去。":"It is not an instant break, but a slow sinking inward.",
+  "身体比你更早知道危险来了。":"The body knows danger has arrived before you do.",
+  "不是不在意，只是不敢碰。":"It is not that you do not care. You are simply afraid to touch it.",
+  "伸手之前，总想先看对方会不会退。":"Before reaching out, you always want to see whether the other person will step back.",
+  "越柔和，越让人失去戒备。":"The softer it feels, the easier it is to lose your guard.",
+  "一段感觉已经过去，却一直没有离开。":"A feeling has already passed, yet it never truly leaves.",
+  "周围很安静，可你并不觉得安全。":"Everything around you is quiet, yet you do not feel safe.",
+  "你反复确认，只因为始终不敢相信。":"You keep checking only because you still do not dare to believe it.",
+  "知道不该回头，却还是想再给一次机会。":"You know you should not turn back, yet you still want to give it one more chance.",
+  "不是爱得更深，而是怕失去得太快。":"It is not deeper love. It is fear of losing too quickly.",
+  "它比你更快地收紧呼吸。":"It tightens your breath faster than you can think.",
+  "第一次不是绷着，而是真的能慢慢呼吸。":"For the first time, you are not bracing. You can truly breathe slowly.",
+  "期待没有发生，空白先落了下来。":"What you hoped for never happened, and emptiness arrived first.",
+  "不知道该往前还是后退，于是停在原地。":"Not knowing whether to move forward or back, you remain still.",
+  "不是热烈的快乐，而是心里偷偷亮了一点。":"It is not loud happiness, only a quiet light glowing inside.",
+  "记忆和现实开始互相改写。":"Memory and reality begin rewriting each other.",
+  "不是脆弱，是你终于肯放轻一点。":"It is not weakness. It is your willingness to soften at last.",
+  "话没有说出口，胸口却先堵住了。":"The words never leave your mouth, but your chest closes first.",
+  "以为过去了，却在某个瞬间重新涌上来。":"You thought it had passed, yet it rushes back in one sudden moment.",
+  "说不出具体是什么，但它就是压着你。":"You cannot name it exactly, but it keeps pressing down on you.",
+  "先发热，再觉得自己难堪。":"First comes the heat, then the shame of feeling it.",
+  "靠近时紧张，离开时又不甘心。":"You feel tense when close, yet unwilling when apart.",
+  "你看见了太多，所以再也睡不回去。":"You have seen too much, so you can never sleep the same way again.",
+  "不是不快乐，只是快乐像隔了一层玻璃。":"It is not the absence of joy. Joy simply feels separated by a sheet of glass.",
+  "情绪像把空气一点点抽空。":"It feels as though emotion is slowly draining the air away.",
+  "结束以后，温度还在。":"Even after it ends, the warmth remains.",
+  "看起来没事，其实一直在轻轻刺着。":"It looks harmless, but it has been quietly stinging all along.",
+  "不是不想要，只是不敢伸手。":"It is not that you do not want it. You just do not dare to reach for it.",
+  "你们都在场，却不在同一个时空里。":"Both of you are present, but not in the same emotional space.",
+  "本以为熄灭了，却又突然烧起来。":"You thought it had gone out, yet it suddenly burns again.",
+  "事情没有结束，也没有真正开始。":"Nothing has ended, and nothing has truly begun."
+};
+
+const animals = ["乌鸦", "飞蛾", "水母", "黑豹", "鹿", "蛇", "鹰", "狼", "鲸", "鲨鱼", "白鸟", "狐", "兔", "海鸥", "蜘蛛", "章鱼", "蝶", "候鸟", "猫", "鱼"];
+
+const modeOptions = [
+  "全部情绪",
+  "偏冷",
+  "偏痛",
+  "关系感",
+  "恢复中"
+];
+
+
+const keys = {
+  current: "sf_v7_current",
+  used: "sf_v7_used",
+  history: "sf_v7_history",
+  mode: "sf_v7_mode",
+  custom: "sf_v7_custom_emotions",
+  entryCards: "sf_v7_entry_cards",
+  historyCollapsed: "sf_v7_history_collapsed",
+  libraryCollapsed: "sf_v7_library_collapsed",
+  newEmotionCollapsed: "sf_v7_new_emotion_collapsed"
+};
+
+let currentEmotionName = "";
+let currentLibraryEmotionName = "";
+let currentMode = localStorage.getItem(keys.mode) || modeOptions[0];
+let used = JSON.parse(localStorage.getItem(keys.used) || "[]");
+let historyList = JSON.parse(localStorage.getItem(keys.history) || "[]");
+let customEmotions = JSON.parse(localStorage.getItem(keys.custom) || "[]");
+let entryCards = JSON.parse(localStorage.getItem(keys.entryCards) || "{}");
+
+function save(key, value) {
+  localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+}
+
+function allEmotions() {
+  return [...emotions, ...customEmotions];
+}
+
+function isCustomEmotion(name) {
+  return customEmotions.some(e => e.name === name);
+}
+
+function getEmotionByName(name) {
+  return allEmotions().find(e => e.name === name) || null;
+}
+
+function getCurrentEmotion() {
+  if (currentEmotionName) {
+    const found = getEmotionByName(currentEmotionName);
+    if (found) return found;
+  }
+  const shownName = (document.getElementById("emotionCn")?.textContent || "").trim();
+  return getEmotionByName(shownName);
+}
+
+function isEmotionUsed(name) {
+  return used.includes(name);
+}
+
+function uniqueStrings(arr) {
+  return [...new Set(arr.filter(Boolean))];
+}
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function sample(arr, n) {
+  return shuffle(arr).slice(0, n);
+}
+
+function hasEntryContent(row) {
+  if (!row) return false;
+  return !!((row.image && String(row.image).trim()) || (row.date && String(row.date).trim()) || (row.note && String(row.note).trim()));
+}
+
+function modeFilter(mode) {
+  if (mode === "全部情绪") return allEmotions();
+  const pools = {
+    "偏冷": ["压抑","冻结","空掉","孤立","怀疑","失真","过度清醒","悬而未落","麻木","无名的重","回避","缺氧"],
+    "偏痛": ["钝痛","隐痛","落空","轻微崩塌","溺水感","不甘","嫉妒后的羞耻","迟来的释怀","幻灭","窒闷","羞耻"],
+    "关系感": ["迷恋","依赖","想念","心软","占有欲","想靠近又想逃","被理解","错位","试探","温柔的危险","落空","余温"],
+    "恢复中": ["自救","安心","柔软","松弛后的疲惫","迟来的释怀","余温","暗喜","被理解","复燃","心软","悬而未落"]
+  };
+  const names = new Set(pools[mode] || []);
+  return allEmotions().filter(e => names.has(e.name));
+}
+
+function renderQuote() {
+  const idx = Math.floor(Math.random() * quotes.length);
+  document.getElementById("quoteCn").textContent = quotes[idx].cn;
+  document.getElementById("quoteEn").textContent = quotes[idx].en;
+}
+
+function resetDrawHome() {
+  currentEmotionName = "";
+  document.getElementById("emotionCn").textContent = "今天的情绪是？";
+  document.getElementById("emotionEn").textContent = "What is today's emotion?";
+  document.getElementById("emotionEn").classList.remove("show");
+  document.getElementById("emotionHint").textContent = "点一下，让它出现。";
+  document.getElementById("resultDescCn").textContent = "抽取后，这里会显示中文描述。";
+  document.getElementById("resultDescEn").textContent = "";
+  document.getElementById("resultDescEn").classList.remove("show");
+  syncMarkUsedButton();
+}
+
+function renderModes() {
+  const row = document.getElementById("modeRow");
+  row.innerHTML = "";
+  modeOptions.forEach(mode => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (mode === currentMode ? " active" : "");
+    chip.textContent = mode;
+    chip.onclick = () => {
+      currentMode = mode;
+      save(keys.mode, currentMode);
+      renderModes();
+      updateStats();
+      syncMarkUsedButton();
     };
+    row.appendChild(chip);
+  });
+}
 
-    let emotions = load(keys.emotions, defaultEmotions);
-    let usedNames = new Set(load(keys.used, []));
-    let history = load(keys.history, []);
-    let currentEmotion = load(keys.current, null);
-    let currentMode = load(keys.mode, 'all');
-    let fanLink = load(keys.fan, '');
+function updateStats() {
+  const pool = modeFilter(currentMode);
+  const available = pool.filter(e => !isEmotionUsed(e.name)).length;
+  document.getElementById("statTotal").textContent = allEmotions().length;
+  document.getElementById("statAvailable").textContent = available;
+  document.getElementById("statUsed").textContent = used.length;
+}
 
-    const screens = {
-      spin: document.getElementById('screen-spin'),
-      detail: document.getElementById('screen-detail'),
-      library: document.getElementById('screen-library'),
-      me: document.getElementById('screen-me'),
-    };
+function syncMarkUsedButton() {
+  const btn = document.getElementById("markUsedBtn");
+  if (!btn) return;
+  const current = getCurrentEmotion();
+  if (!current) {
+    btn.disabled = false;
+    btn.textContent = "确认已使用";
+    return;
+  }
+  if (isEmotionUsed(current.name)) {
+    btn.disabled = true;
+    btn.textContent = "已标记使用";
+  } else {
+    btn.disabled = false;
+    btn.textContent = "确认已使用";
+  }
+}
 
-    const emotionDisplay = document.getElementById('emotionDisplay');
-    const emotionSub = document.getElementById('emotionSub');
-    const detailName = document.getElementById('detailName');
-    const detailDesc = document.getElementById('detailDesc');
-    const detailTags = document.getElementById('detailTags');
-    const directionList = document.getElementById('directionList');
-    const artList = document.getElementById('artList');
-    const shotList = document.getElementById('shotList');
-    const scriptList = document.getElementById('scriptList');
-    const historyList = document.getElementById('historyList');
-    const modeRow = document.getElementById('modeRow');
-    const spinWrap = document.getElementById('spinWrap');
-    const statTotal = document.getElementById('statTotal');
-    const statAvailable = document.getElementById('statAvailable');
-    const statUsed = document.getElementById('statUsed');
+function setCurrent(emotion, recordHistory=false) {
+  if (!emotion) return;
+  currentEmotionName = emotion.name;
+  save(keys.current, currentEmotionName);
 
-    function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-    function load(k,fallback){
-      try{
-        const raw = localStorage.getItem(k);
-        return raw ? JSON.parse(raw) : fallback;
-      }catch(e){ return fallback; }
-    }
+  const enEl = document.getElementById("emotionEn");
+  const descEnEl = document.getElementById("resultDescEn");
+  enEl.classList.remove("show");
+  descEnEl.classList.remove("show");
 
-    function switchScreen(name){
-      Object.values(screens).forEach(s => s.classList.remove('active'));
-      screens[name].classList.add('active');
-      document.querySelectorAll('.tab').forEach(tab=>{
-        tab.classList.toggle('active', tab.dataset.screen === name);
-      });
-    }
+  document.getElementById("emotionCn").textContent = emotion.name;
+  document.getElementById("emotionEn").textContent = emotion.en || "";
+  document.getElementById("emotionHint").textContent = isEmotionUsed(emotion.name)
+    ? "这个情绪已经被标记为已使用。"
+    : "再次点击圆盘或按钮，可以抽取新的情绪。";
+  document.getElementById("resultDescCn").textContent = emotion.desc || "";
+  document.getElementById("resultDescEn").textContent = descTranslations[emotion.desc] || emotion.desc_en || "";
 
-    function renderModes(){
-      modeRow.innerHTML = '';
-      Object.entries(modeLabels).forEach(([key,label])=>{
-        const chip = document.createElement('div');
-        chip.className = 'chip' + (currentMode===key ? ' active' : '');
-        chip.textContent = label;
-        chip.onclick = ()=>{
-          currentMode = key;
-          save(keys.mode, currentMode);
-          renderModes();
-          updateStats();
-        };
-        modeRow.appendChild(chip);
-      });
-    }
+  setTimeout(() => enEl.classList.add("show"), 600);
+  setTimeout(() => descEnEl.classList.add("show"), 650);
 
-    function getPool(){
-      return emotions.filter(e => (e.mode || []).includes(currentMode) || (currentMode === 'all' && (e.mode || []).includes('all')))
-        .filter(e => !usedNames.has(e.name));
-    }
+  renderDetail(emotion);
+  syncMarkUsedButton();
 
-    function updateStats(){
-      statTotal.textContent = emotions.length;
-      statAvailable.textContent = getPool().length;
-      statUsed.textContent = usedNames.size;
-    }
-
-    function fillList(node, items){
-      node.innerHTML = '';
-      if(!items || !items.length){
-        node.innerHTML = '<div class="item">暂时没有内容。</div>';
-        return;
-      }
-      items.forEach(text=>{
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.textContent = text;
-        node.appendChild(div);
-      });
-    }
-
-    function renderDetail(e){
-      if(!e){
-        detailName.textContent = '还没有抽取';
-        detailDesc.textContent = '抽取后，这里会显示完整说明。';
-        detailTags.innerHTML = '';
-        fillList(directionList, []);
-        fillList(artList, []);
-        fillList(shotList, []);
-        fillList(scriptList, []);
-        return;
-      }
-      detailName.textContent = e.name;
-      detailDesc.textContent = e.desc || '';
-      detailTags.innerHTML = '';
-      (e.keywords || []).forEach(k=>{
-        const tag = document.createElement('div');
-        tag.className = 'tag';
-        tag.textContent = k;
-        detailTags.appendChild(tag);
-      });
-      fillList(directionList, e.direction || []);
-      fillList(artList, e.art || []);
-      fillList(shotList, e.shots || []);
-      fillList(scriptList, e.script || []);
-    }
-
-    function setCurrent(e){
-      currentEmotion = e;
-      save(keys.current, currentEmotion);
-      emotionDisplay.textContent = e.name;
-      emotionSub.textContent = e.desc || '已抽取';
-      renderDetail(e);
-    }
-
-    function pushHistory(type,name){
-      history.unshift({type,name,time:new Date().toLocaleString('zh-CN', {hour12:false})});
-      history = history.slice(0, 20);
-      save(keys.history, history);
-      renderHistory();
-    }
-
-    function renderHistory(){
-      historyList.innerHTML = '';
-      if(!history.length){
-        historyList.innerHTML = '<div class="history-row"><div>还没有记录</div><div class="small">你抽取、加入、使用后会显示在这里。</div></div>';
-        return;
-      }
-      history.forEach(h=>{
-        const label = h.type==='used' ? '已使用' : h.type==='added' ? '已加入' : '已抽取';
-        const row = document.createElement('div');
-        row.className = 'history-row';
-        row.innerHTML = `<div>${h.name}</div><div class="small">${label} · ${h.time}</div>`;
-        historyList.appendChild(row);
-      });
-    }
-
-    function spin(){
-      const pool = getPool();
-      if(!pool.length){
-        emotionDisplay.textContent = '当前模式已抽空';
-        emotionSub.textContent = '切换模式，或新增新的情绪。';
-        return;
-      }
-      spinWrap.classList.add('spinning');
-      const duration = 3000;
-      const interval = 90;
-      let elapsed = 0;
-      let pick = pool[0];
-      const timer = setInterval(()=>{
-        pick = pool[Math.floor(Math.random()*pool.length)];
-        emotionDisplay.textContent = pick.name;
-        emotionSub.textContent = (pick.keywords || []).join(' · ') || '抽取中';
-        elapsed += interval;
-        if(elapsed >= duration){
-          clearInterval(timer);
-          spinWrap.classList.remove('spinning');
-          setCurrent(pick);
-          pushHistory('spun', pick.name);
-        }
-      }, interval);
-    }
-
-    function markUsed(){
-      if(!currentEmotion) return;
-      usedNames.add(currentEmotion.name);
-      save(keys.used, Array.from(usedNames));
-      pushHistory('used', currentEmotion.name);
-      updateStats();
-    }
-
-    function addEmotion(){
-      const name = document.getElementById('newName').value.trim();
-      const keywords = document.getElementById('newKeywords').value.trim();
-      const mode = document.getElementById('newMode').value;
-      const desc = document.getElementById('newDesc').value.trim();
-      const art = document.getElementById('newArt').value.trim();
-      const shot = document.getElementById('newShot').value.trim();
-      const script = document.getElementById('newScript').value.trim();
-      const addStatus = document.getElementById('addStatus');
-
-      if(!name){
-        addStatus.textContent = '请先填写情绪名称。';
-        addStatus.className = 'small status warn';
-        return;
-      }
-      if(emotions.some(e=>e.name===name)){
-        addStatus.textContent = '这个情绪已经存在。';
-        addStatus.className = 'small status warn';
-        return;
-      }
-
-      const emotion = {
-        name,
-        keywords: keywords ? keywords.split(',').map(s=>s.trim()).filter(Boolean) : [],
-        mode: Array.from(new Set(['all', mode])),
-        desc,
-        direction:['这是新增情绪，后续你可以继续补充更个人化的创作方向。'],
-        art: art ? art.split(/[\n,，]/).map(s=>s.trim()).filter(Boolean) : [],
-        shots: shot ? shot.split(/[\n,，]/).map(s=>s.trim()).filter(Boolean) : [],
-        script: script ? script.split(/\n+/).map(s=>s.trim()).filter(Boolean) : []
-      };
-
-      emotions.unshift(emotion);
-      save(keys.emotions, emotions);
-      pushHistory('added', emotion.name);
-      updateStats();
-
-      ['newName','newKeywords','newDesc','newArt','newShot','newScript'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('newMode').value = 'all';
-      addStatus.textContent = `已加入情绪：${emotion.name}`;
-      addStatus.className = 'small status ok';
-    }
-
-    function resetDefaults(){
-      emotions = JSON.parse(JSON.stringify(defaultEmotions));
-      usedNames = new Set();
-      currentEmotion = null;
-      save(keys.emotions, emotions);
-      save(keys.used, []);
-      save(keys.current, null);
-      updateStats();
-      emotionDisplay.textContent = '点这里开始';
-      emotionSub.textContent = '让观众主要看到这里';
-      renderDetail(null);
-      pushHistory('added', '已恢复默认情绪库');
-      document.getElementById('addStatus').textContent = '默认情绪库已恢复。';
-      document.getElementById('addStatus').className = 'small status ok';
-    }
-
-    function copyCurrent(){
-      const text = currentEmotion ? [
-        `情绪：${currentEmotion.name}`,
-        `关键词：${(currentEmotion.keywords||[]).join(' / ')}`,
-        `描述：${currentEmotion.desc || ''}`,
-        '',
-        '绘画元素：',
-        ...(currentEmotion.art || []),
-        '',
-        '镜头建议：',
-        ...(currentEmotion.shots || []),
-        '',
-        '视频文案：',
-        ...(currentEmotion.script || [])
-      ].join('\n') : '还没有抽取情绪。';
-      navigator.clipboard.writeText(text);
-    }
-
-    function saveFanLink(){
-      const input = document.getElementById('fanLinkInput').value.trim();
-      const status = document.getElementById('fanLinkStatus');
-      const openBtn = document.getElementById('openFanLinkBtn');
-      fanLink = input;
-      save(keys.fan, fanLink);
-      if(fanLink){
-        openBtn.href = fanLink;
-        status.textContent = '投稿链接已保存。';
-        status.className = 'small status ok';
-      }else{
-        openBtn.href = '#';
-        status.textContent = '还没有设置真实的投稿链接。';
-        status.className = 'small';
-      }
-    }
-
-    document.querySelectorAll('.tab').forEach(tab=>{
-      tab.onclick = ()=>switchScreen(tab.dataset.screen);
+  if (recordHistory) {
+    historyList.unshift({
+      name: emotion.name,
+      en: emotion.en || "",
+      time: new Date().toLocaleString("zh-CN", {hour12:false}),
+      mode: currentMode
     });
-
-    document.getElementById('spinBtn').onclick = spin;
-    document.getElementById('centerSpin').onclick = spin;
-    document.getElementById('markUsedBtn').onclick = markUsed;
-    document.getElementById('addEmotionBtn').onclick = addEmotion;
-    document.getElementById('resetDefaultsBtn').onclick = resetDefaults;
-    document.getElementById('copyResultBtn').onclick = copyCurrent;
-    document.getElementById('saveFanLinkBtn').onclick = saveFanLink;
-
-    renderModes();
-    updateStats();
+    historyList = historyList.slice(0, 30);
+    save(keys.history, historyList);
     renderHistory();
-    renderDetail(currentEmotion);
-    if(currentEmotion){
-      emotionDisplay.textContent = currentEmotion.name;
-      emotionSub.textContent = currentEmotion.desc || '已抽取';
+  }
+}
+
+function spin() {
+  const pool = modeFilter(currentMode);
+  const available = pool.filter(e => !isEmotionUsed(e.name));
+
+  if (!available.length) {
+    alert("这个分类里已经没有可抽取的情绪了。");
+    return;
+  }
+
+  const wrap = document.getElementById("spinWrap");
+  if (wrap) wrap.classList.add("spinning");
+
+  setTimeout(() => {
+    if (wrap) wrap.classList.remove("spinning");
+    const chosen = pick(available);
+    setCurrent(chosen, true);
+    updateStats();
+  }, 900);
+}
+
+function markUsed() {
+  let current = getCurrentEmotion();
+  if (!current) {
+    const shownName = (document.getElementById("emotionCn")?.textContent || "").trim();
+    current = getEmotionByName(shownName);
+  }
+
+  if (!current) {
+    alert("先抽取一个情绪。");
+    return;
+  }
+
+  if (isEmotionUsed(current.name)) {
+    syncMarkUsedButton();
+    alert("这个情绪已经标记过了。");
+    return;
+  }
+
+  used = uniqueStrings([current.name, ...used]);
+  save(keys.used, used);
+  updateStats();
+  renderLibrary();
+
+  currentEmotionName = current.name;
+  document.getElementById("emotionHint").textContent = "这个情绪已被移出奖池。";
+  document.getElementById("resultDescCn").textContent = `“${current.name}”已经被标记为已使用。`;
+  document.getElementById("resultDescEn").textContent = `"${current.name}" has been marked as used and removed from the draw pool.`;
+  document.getElementById("resultDescEn").classList.add("show");
+  syncMarkUsedButton();
+}
+
+function keywordTags(emotion) {
+  if (emotion.keywords && emotion.keywords.length) return emotion.keywords.slice(0,4);
+  const tags = [];
+  if (emotion.name.includes("静") || emotion.desc.includes("安静")) tags.push("静止感");
+  if (emotion.desc.includes("呼吸") || emotion.name.includes("缺氧")) tags.push("呼吸");
+  if (emotion.desc.includes("裂") || emotion.name.includes("崩")) tags.push("裂纹");
+  if (emotion.desc.includes("水") || emotion.name.includes("潮") || emotion.name.includes("溺")) tags.push("水感");
+  if (emotion.name.includes("热") || emotion.name.includes("怒") || emotion.name.includes("妒")) tags.push("热度");
+  if (emotion.name.includes("想") || emotion.name.includes("依") || emotion.name.includes("占有")) tags.push("关系");
+  while (tags.length < 3) {
+    const pool = ["雾感","金属","墨晕","月光","皮肤","留白","反光","边界"];
+    const candidate = pick(pool);
+    if (!tags.includes(candidate)) tags.push(candidate);
+  }
+  return tags.slice(0, 4);
+}
+
+function generateDirections(emotion) {
+  if (emotion.directions && emotion.directions.length) return emotion.directions;
+  const bank = [
+    `把“${emotion.name}”做成一个正在向内收缩的结构，重点放在边缘感与停顿感。`,
+    `以黑灰渐层去表现压迫或空隙，让主体像被雾包住，而不是被线条解释。`,
+    `画面不要太满，留出明显空白，让情绪像在空处里被看见。`,
+    `让主要视觉重心偏一侧，制造轻微失衡，像情绪还没真正落地。`,
+    `把情绪做成“将要发生”的状态，不要直接画结果，保留预兆感。`,
+    `优先用环状、裂痕、水纹、折线等结构去代替具体叙事。`,
+    `让主体看起来像悬着的、没说完的，用留白制造后劲。`,
+    `不要追求热闹的画面，重点是黑灰、雾感、金属反光与墨晕层次。`
+  ];
+  return sample(bank, 2 + Math.floor(Math.random() * 3));
+}
+
+function generateArt(emotion) {
+  if ((emotion.arts && emotion.arts.length) || (emotion.art && emotion.art.length)) return emotion.arts || emotion.art;
+  const animal = pick(animals);
+  const pool = [
+    `薄雾 / fog veil`,`水纹 / ripple ring`,`裂缝 / fracture seam`,`月面反光 / cold sheen`,
+    `金属边缘 / metallic edge`,`下沉气泡 / sinking bubbles`,`墨色晕开 / ink bloom`,
+    `空心圆环 / hollow orbit`,`垂落线条 / falling lines`,`半透明膜感 / translucent layer`,
+    `碎镜切面 / broken mirror plane`,`肋骨式弧线 / rib-like arcs`,`静止水面 / still water`,
+    `远处微光 / distant glow`,`冷白高光 / pale highlight`
+  ];
+  const picked = sample(pool, 4);
+  picked.splice(Math.floor(Math.random() * 5), 0, `动物参考：${animal} / animal reference`);
+  return picked;
+}
+
+function generateShots(emotion) {
+  if (emotion.shots && emotion.shots.length) return emotion.shots;
+  return sample([
+    `镜头从空白纸面或 iPad 冷启动开始，停 1 秒再进入动作。`,
+    `多用手部近景，动作慢，呼吸感明显，不要频繁切镜。`,
+    `可拍局部反光、针头、墨水、水迹，让材质比主体先出现。`,
+    `成品只闪 0.5~1 秒，重点放在创作过程而不是完整解释。`,
+    `用背面或侧后方人物镜头，比正脸更适合这种情绪氛围。`,
+    `尽量避免大幅晃动，镜头像在观察，而不是在参与。`
+  ], 3);
+}
+
+function generateScripts(emotion) {
+  if (emotion.scripts && emotion.scripts.length) return emotion.scripts;
+  return sample([
+    `你有没有试过，把一种情绪藏太久，久到它开始长出形状。`,
+    `有些感觉不会消失，它只是换了一种更安静的方式留下来。`,
+    `今天抽到的是“${emotion.name}”。如果把它留在皮肤上，它应该是什么样子？`,
+    `不是所有情绪都需要答案，有的只需要被看见一次。`,
+    `有时候留下来的不是图，而是那一刻的呼吸。`,
+    `如果可以留下一个情绪，你会选哪一个？`
+  ], 3);
+}
+
+function renderDetail(emotion) {
+  if (!emotion) return;
+
+  document.getElementById("detailName").textContent = emotion.name + " · " + (emotion.en || "");
+  document.getElementById("detailDesc").textContent = emotion.desc + (emotion.desc_en ? " / " + emotion.desc_en : "");
+
+  document.getElementById("editEmotionName").value = emotion.name || "";
+  document.getElementById("editEmotionEn").value = emotion.en || "";
+  document.getElementById("editEmotionDesc").value = emotion.desc || "";
+  document.getElementById("editEmotionDescEn").value = emotion.desc_en || "";
+  document.getElementById("editEmotionKeywords").value = (emotion.keywords || []).join(" / ");
+  document.getElementById("editEmotionDirections").value = (emotion.directions || []).join(" / ");
+  document.getElementById("editEmotionArts").value = (emotion.arts || emotion.art || []).join(" / ");
+
+  const tags = document.getElementById("detailTags");
+  tags.innerHTML = "";
+  keywordTags(emotion).forEach(tag => {
+    const span = document.createElement("div");
+    span.className = "tag";
+    span.textContent = tag;
+    tags.appendChild(span);
+  });
+
+  const renderList = (id, rows) => {
+    const box = document.getElementById(id);
+    box.innerHTML = "";
+    rows.forEach(text => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.textContent = text;
+      box.appendChild(div);
+    });
+  };
+
+  renderList("directionList", generateDirections(emotion));
+  renderList("artList", generateArt(emotion));
+  renderList("shotList", generateShots(emotion));
+  renderList("scriptList", generateScripts(emotion));
+}
+
+function renderLibrary() {
+  const box = document.getElementById("libraryList");
+  box.innerHTML = "";
+
+  allEmotions().forEach((emotion, index) => {
+    const done = hasEntryContent(entryCards[emotion.name]) ? '<div class="done-badge">已完成</div>' : '';
+    const usedBadge = isEmotionUsed(emotion.name) ? '<div class="done-badge" style="right:auto;left:10px;background:#17171a;color:#f3f3f4;border:1px solid rgba(255,255,255,.08)">已使用</div>' : '';
+    const deleteBlock = isCustomEmotion(emotion.name)
+      ? '<div class="actions" style="margin-top:10px;grid-template-columns:1fr"><button type="button" class="btn delete-btn">删除这个情绪</button></div>'
+      : '';
+
+    const card = document.createElement("div");
+    card.className = "library-card collapsed";
+    card.innerHTML = `
+      ${done}
+      ${usedBadge}
+      <div class="collapse-toggle">
+        <div>
+          <strong>${emotion.name}</strong>
+          <span>${emotion.en || ""}</span>
+        </div>
+        <div class="collapse-arrow">⌃</div>
+      </div>
+      <div class="collapsible-content is-hidden" id="library-card-body-${index}" style="margin-top:10px">
+        <p>${emotion.desc}</p>
+        <div class="actions" style="margin-top:12px">
+          <button type="button" class="btn primary">打开档案</button>
+          <button type="button" class="btn">设为当前情绪</button>
+        </div>
+        ${deleteBlock}
+      </div>
+    `;
+
+    const header = card.querySelector(".collapse-toggle");
+    const body = card.querySelector(".collapsible-content");
+    const buttons = card.querySelectorAll("button");
+    const openBtn = buttons[0];
+    const setBtn = buttons[1];
+    const deleteBtn = buttons.length > 2 ? buttons[2] : null;
+
+    header.onclick = (e) => {
+      e.preventDefault();
+      const hidden = body.classList.contains("is-hidden");
+      body.classList.toggle("is-hidden", !hidden);
+      card.classList.toggle("collapsed", !hidden);
+    };
+    openBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openLibraryEntry(emotion);
+    };
+    setBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setCurrent(emotion, false);
+      switchScreen("emotion");
+    };
+    if (deleteBtn) {
+      deleteBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteCustomEmotion(emotion.name);
+      };
     }
-    document.getElementById('fanLinkInput').value = fanLink || '';
-    if(fanLink){
-      document.getElementById('openFanLinkBtn').href = fanLink;
-      document.getElementById('fanLinkStatus').textContent = '投稿链接已保存。';
-      document.getElementById('fanLinkStatus').className = 'small status ok';
+
+    box.appendChild(card);
+  });
+}
+
+function renderHistory() {
+  const box = document.getElementById("historyList");
+  box.innerHTML = "";
+  if (!historyList.length) {
+    box.innerHTML = '<div class="empty">还没有抽取记录。</div>';
+    return;
+  }
+  historyList.forEach(row => {
+    const div = document.createElement("div");
+    div.className = "history-row";
+    div.innerHTML = `<strong>${row.name}</strong> · ${row.en || ""}<br><span class="small">${row.time} · 模式：${row.mode || "全部情绪"}</span>`;
+    box.appendChild(div);
+  });
+}
+
+function renderInbox() {
+  const box = document.getElementById("inboxList");
+  if (!box) return;
+  box.innerHTML = '<div class="empty">当前版本未启用投稿收件箱。</div>';
+}
+
+function openLibraryEntry(emotion) {
+  currentLibraryEmotionName = emotion.name;
+  document.getElementById("entryEmotionName").textContent = emotion.name + " · " + (emotion.en || "");
+  document.getElementById("entryEmotionDesc").textContent = emotion.desc;
+  const saved = entryCards[emotion.name];
+  document.getElementById("entryWorkImageInput").value = "";
+  document.getElementById("entryWorkDateInput").value = saved?.date || "";
+  document.getElementById("entryWorkNoteInput").value = saved?.note || "";
+  renderEntryCurrentCard(emotion.name);
+  switchScreen("library-entry");
+}
+
+function renderEntryCurrentCard(emotionName) {
+  const box = document.getElementById("entryCurrentCard");
+  const row = entryCards[emotionName];
+  if (!hasEntryContent(row)) {
+    box.innerHTML = '<div class="empty" style="margin-top:14px">这个情绪还没有完成记录。</div>';
+    return;
+  }
+  box.innerHTML = `<div class="work-card" style="margin-top:14px"><div class="work-meta">${emotionName} · ${row.date || ""}</div><div>${row.note || "没有一句话"}</div>${row.image ? `<img class="entry-photo" src="${row.image}" alt="完成作品">` : ""}</div>`;
+}
+
+function deleteCustomEmotion(name) {
+  if (!isCustomEmotion(name)) {
+    alert("只能删除你自己新增的情绪。");
+    return;
+  }
+
+  const ok = confirm(`确定要删除“${name}”吗？`);
+  if (!ok) return;
+
+  customEmotions = customEmotions.filter(e => e.name !== name);
+  save(keys.custom, customEmotions);
+
+  used = used.filter(n => n !== name);
+  save(keys.used, used);
+
+  historyList = historyList.filter(row => row.name !== name);
+  save(keys.history, historyList);
+
+  if (entryCards[name]) {
+    delete entryCards[name];
+    save(keys.entryCards, entryCards);
+  }
+
+  if (currentEmotionName === name) {
+    currentEmotionName = "";
+    localStorage.removeItem(keys.current);
+    resetDrawHome();
+  }
+
+  if (currentLibraryEmotionName === name) {
+    currentLibraryEmotionName = "";
+    switchScreen("library");
+  }
+
+  updateStats();
+  renderHistory();
+  renderLibrary();
+}
+
+function addEmotionToLibrary() {
+  const name = document.getElementById("newEmotionName").value.trim();
+  const en = document.getElementById("newEmotionEn").value.trim();
+  const desc = document.getElementById("newEmotionDesc").value.trim();
+  const desc_en = document.getElementById("newEmotionDescEn").value.trim();
+  const keywords = document.getElementById("newEmotionKeywords").value.split("/").map(s => s.trim()).filter(Boolean);
+  const directions = document.getElementById("newEmotionDirections").value.split("/").map(s => s.trim()).filter(Boolean);
+  const arts = document.getElementById("newEmotionArts").value.split("/").map(s => s.trim()).filter(Boolean);
+
+  if (!name || !en || !desc) {
+    alert("请至少填写中文名、英文名、中文描述。");
+    return;
+  }
+  if (allEmotions().some(e => e.name === name)) {
+    alert("这个情绪名已经存在。");
+    return;
+  }
+
+  customEmotions.unshift({ name, en, desc, desc_en: desc_en || desc, keywords, directions, arts });
+  save(keys.custom, customEmotions);
+  renderLibrary();
+  updateStats();
+  ["newEmotionName","newEmotionEn","newEmotionDesc","newEmotionDescEn","newEmotionKeywords","newEmotionDirections","newEmotionArts"].forEach(id => document.getElementById(id).value = "");
+}
+
+function saveCurrentEmotionEdit() {
+  const current = getCurrentEmotion();
+  if (!current) {
+    alert("请先选中一个情绪。");
+    return;
+  }
+
+  const originalName = current.name;
+  const updated = {
+    ...current,
+    name: document.getElementById("editEmotionName").value.trim(),
+    en: document.getElementById("editEmotionEn").value.trim(),
+    desc: document.getElementById("editEmotionDesc").value.trim(),
+    desc_en: document.getElementById("editEmotionDescEn").value.trim(),
+    keywords: document.getElementById("editEmotionKeywords").value.split("/").map(s => s.trim()).filter(Boolean),
+    directions: document.getElementById("editEmotionDirections").value.split("/").map(s => s.trim()).filter(Boolean),
+    arts: document.getElementById("editEmotionArts").value.split("/").map(s => s.trim()).filter(Boolean)
+  };
+
+  if (!updated.name || !updated.en || !updated.desc) {
+    alert("中文名、英文名、中文描述不能为空。");
+    return;
+  }
+  if (originalName !== updated.name && allEmotions().some(e => e.name === updated.name)) {
+    alert("这个情绪名已经存在。");
+    return;
+  }
+
+  const customIndex = customEmotions.findIndex(e => e.name === originalName);
+  if (customIndex >= 0) {
+    customEmotions[customIndex] = updated;
+  } else {
+    // Persist built-in edits by shadow-copying them into customEmotions and removing duplicates later.
+    const existingShadow = customEmotions.findIndex(e => e.name === updated.name);
+    if (existingShadow >= 0) customEmotions.splice(existingShadow, 1);
+    customEmotions.unshift(updated);
+  }
+  save(keys.custom, customEmotions);
+
+  if (originalName !== updated.name) {
+    used = used.map(name => name === originalName ? updated.name : name);
+    save(keys.used, used);
+
+    historyList = historyList.map(row => row.name === originalName ? {...row, name: updated.name, en: updated.en} : row);
+    save(keys.history, historyList);
+
+    if (entryCards[originalName]) {
+      entryCards[updated.name] = entryCards[originalName];
+      delete entryCards[originalName];
+      save(keys.entryCards, entryCards);
     }
-  </script>
+
+    if (currentLibraryEmotionName === originalName) currentLibraryEmotionName = updated.name;
+  }
+
+  currentEmotionName = updated.name;
+  save(keys.current, currentEmotionName);
+  updateStats();
+  renderHistory();
+  renderLibrary();
+  renderDetail(updated);
+  setCurrent(updated, false);
+}
+
+function saveEntryWorkCard() {
+  const emotion = getEmotionByName(currentLibraryEmotionName);
+  if (!emotion) {
+    alert("请先从情绪库点开一个情绪。");
+    return;
+  }
+  const date = document.getElementById("entryWorkDateInput").value.trim();
+  const note = document.getElementById("entryWorkNoteInput").value.trim();
+  const input = document.getElementById("entryWorkImageInput");
+  const file = input.files[0];
+
+  const finalize = (imgValue) => {
+    const old = entryCards[emotion.name] || {};
+    const next = {
+      image: imgValue !== undefined ? (imgValue || "") : (old.image || ""),
+      date: date || "",
+      note: note || ""
+    };
+
+    if (!hasEntryContent(next)) {
+      delete entryCards[emotion.name];
+    } else {
+      entryCards[emotion.name] = next;
+    }
+
+    save(keys.entryCards, entryCards);
+    renderEntryCurrentCard(emotion.name);
+    renderLibrary();
+  };
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => finalize(reader.result);
+    reader.readAsDataURL(file);
+  } else {
+    finalize(undefined);
+  }
+}
+
+function applyHistoryCollapseState() {
+  const wrap = document.getElementById("historyListWrap");
+  const section = document.getElementById("historySection");
+  const collapsed = localStorage.getItem(keys.historyCollapsed) === "1";
+  if (!wrap || !section) return;
+  wrap.classList.toggle("is-hidden", collapsed);
+  section.classList.toggle("collapsed", collapsed);
+}
+
+function toggleHistoryCollapse() {
+  const collapsed = localStorage.getItem(keys.historyCollapsed) === "1";
+  localStorage.setItem(keys.historyCollapsed, collapsed ? "0" : "1");
+  applyHistoryCollapseState();
+}
+
+function applyLibraryCollapseState() {
+  const wrap = document.getElementById("libraryListWrap");
+  const section = document.getElementById("librarySection");
+  const collapsed = localStorage.getItem(keys.libraryCollapsed) === "1";
+  if (!wrap || !section) return;
+  wrap.classList.toggle("is-hidden", collapsed);
+  section.classList.toggle("collapsed", collapsed);
+}
+
+function toggleLibraryCollapse() {
+  const collapsed = localStorage.getItem(keys.libraryCollapsed) === "1";
+  localStorage.setItem(keys.libraryCollapsed, collapsed ? "0" : "1");
+  applyLibraryCollapseState();
+}
+
+function applyNewEmotionCollapseState() {
+  const wrap = document.getElementById("newEmotionWrap");
+  const section = document.getElementById("newEmotionSection");
+  const collapsed = localStorage.getItem(keys.newEmotionCollapsed) === "1";
+  if (!wrap || !section) return;
+  wrap.classList.toggle("is-hidden", collapsed);
+  section.classList.toggle("collapsed", collapsed);
+}
+
+function toggleNewEmotionCollapse() {
+  const collapsed = localStorage.getItem(keys.newEmotionCollapsed) === "1";
+  localStorage.setItem(keys.newEmotionCollapsed, collapsed ? "0" : "1");
+  applyNewEmotionCollapseState();
+}
+
+function switchScreen(name) {
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(el => el.classList.remove("active"));
+  const screen = document.getElementById("screen-" + name);
+  if (screen) screen.classList.add("active");
+  const tab = document.querySelector(`.tab[data-screen="${name}"]`);
+  if (tab) {
+    tab.classList.add("active");
+  } else if (name === "library-entry") {
+    const fallbackTab = document.querySelector('.tab[data-screen="library"]');
+    if (fallbackTab) fallbackTab.classList.add("active");
+  }
+}
+
+function bindEmotionPage() {
+  const spinBtn = document.getElementById("spinBtn");
+  const centerSpin = document.getElementById("centerSpin");
+  const markUsedBtn = document.getElementById("markUsedBtn");
+  if (spinBtn) spinBtn.onclick = (e) => { e.preventDefault(); spin(); };
+  if (centerSpin) centerSpin.onclick = (e) => { e.preventDefault(); spin(); };
+  if (markUsedBtn) markUsedBtn.onclick = (e) => { e.preventDefault(); markUsed(); };
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.onclick = () => switchScreen(tab.dataset.screen);
+});
+
+const addEmotionBtnEl = document.getElementById("addEmotionBtn");
+if (addEmotionBtnEl) addEmotionBtnEl.onclick = addEmotionToLibrary;
+
+const clearEmotionBtnEl = document.getElementById("clearEmotionBtn");
+if (clearEmotionBtnEl) clearEmotionBtnEl.onclick = () => {
+  ["newEmotionName","newEmotionEn","newEmotionDesc","newEmotionDescEn","newEmotionKeywords","newEmotionDirections","newEmotionArts"].forEach(id => document.getElementById(id).value = "");
+};
+
+const saveEmotionEditBtnEl = document.getElementById("saveEmotionEditBtn");
+if (saveEmotionEditBtnEl) saveEmotionEditBtnEl.onclick = saveCurrentEmotionEdit;
+
+const resetEmotionEditBtnEl = document.getElementById("resetEmotionEditBtn");
+if (resetEmotionEditBtnEl) resetEmotionEditBtnEl.onclick = () => {
+  const current = getCurrentEmotion();
+  if (current) renderDetail(current);
+};
+
+const backToLibraryBtnEl = document.getElementById("backToLibraryBtn");
+if (backToLibraryBtnEl) backToLibraryBtnEl.onclick = () => switchScreen("library");
+
+const clearEntryWorkBtnEl = document.getElementById("clearEntryWorkBtn");
+if (clearEntryWorkBtnEl) clearEntryWorkBtnEl.onclick = () => {
+  ["entryWorkDateInput","entryWorkNoteInput"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("entryWorkImageInput").value = "";
+};
+
+const saveEntryWorkBtnEl = document.getElementById("saveEntryWorkBtn");
+if (saveEntryWorkBtnEl) saveEntryWorkBtnEl.onclick = saveEntryWorkCard;
+
+renderQuote();
+renderModes();
+renderLibrary();
+renderHistory();
+renderInbox();
+updateStats();
+bindEmotionPage();
+
+const savedName = localStorage.getItem(keys.current);
+if (savedName) {
+  const savedEmotion = getEmotionByName(savedName);
+  if (savedEmotion) setCurrent(savedEmotion, false);
+  else resetDrawHome();
+} else {
+  resetDrawHome();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  bindEmotionPage();
+
+  const historyToggle = document.getElementById("historyToggle");
+  if (historyToggle) historyToggle.addEventListener("click", function(e){ e.preventDefault(); toggleHistoryCollapse(); });
+
+  const libraryToggle = document.getElementById("libraryToggle");
+  if (libraryToggle) libraryToggle.addEventListener("click", function(e){ e.preventDefault(); toggleLibraryCollapse(); });
+
+  const newEmotionToggle = document.getElementById("newEmotionToggle");
+  if (newEmotionToggle) newEmotionToggle.addEventListener("click", function(e){ e.preventDefault(); toggleNewEmotionCollapse(); });
+
+  applyHistoryCollapseState();
+  applyLibraryCollapseState();
+  applyNewEmotionCollapseState();
+});
+
+</script>
 </body>
 </html>
+<style>
+#libraryListWrap{
+  max-height:none !important;
+  overflow:visible !important;
+}
+#libraryList{
+  overflow:visible !important;
+}
+.app{
+  overflow:visible !important;
+}
+</style>
